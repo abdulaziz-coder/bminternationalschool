@@ -198,28 +198,17 @@
     background: var(--gold);
     transform: translate(2px, -2px);
   }
-
-  .values-strip .mini-sun,
-  .values-strip b {
-    transition: transform 400ms ease;
-  }
-
-  .values-strip span:hover b {
-    transform: rotate(45deg);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .curriculum-card,
   .curriculum-card-link,
-  .curriculum-card-link > span,
-  .values-strip b {
+  .curriculum-card-link > span {
     transition: none;
   }
 
   .curriculum-card-link:focus-visible > span,
-  .curriculum-card:hover .curriculum-card-link > span,
-  .values-strip span:hover b {
+  .curriculum-card:hover .curriculum-card-link > span {
     transform: none;
   }
 }

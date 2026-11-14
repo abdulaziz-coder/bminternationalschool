@@ -1,0 +1,36 @@
+/* Scroll-driven effects (see ScrollFx.tsx and App.tsx). */
+
+/* Entrances start off to the side; keep them from adding a horizontal scrollbar. */
+#main {
+  overflow-x: clip;
+}
+
+.scroll-progress {
+  background: linear-gradient(90deg, #58a8dc, #e5b963);
+}
+
+/* Words need their own box to move and sharpen individually. */
+.scrub-word {
+  display: inline-block;
+}
+
+/* A still grid cell around each curriculum card; the card fills it as before. */
+.curriculum-cell {
+  display: flex;
+  min-width: 0;
+}
+
+.curriculum-cell > .curriculum-card {
+  flex: 1;
+}
+
+/* The hero photo zooms inside a fixed rounded frame. */
+.fx-frame {
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.fx-fill {
+  height: 100%;
+}
