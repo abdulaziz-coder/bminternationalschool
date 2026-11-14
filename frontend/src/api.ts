@@ -1,4 +1,4 @@
-import { catalogSchema, receiptSchema, type Enquiry } from './schemas';
+import { catalogSchema, noticesSchema, receiptSchema, type Enquiry } from './schemas';
 
 export class ApiError extends Error {}
 
@@ -16,6 +16,7 @@ export async function getStages() {
   // Ignore the retired stage if an older local API is still running during an update.
   return catalogSchema.parse(Array.isArray(data) ? data.filter(stage => stage?.id !== 'early') : data);
 }
+export async function getNotices() { return noticesSchema.parse(await request('/notices')); }
 export async function submitEnquiry(data: Enquiry, id: string) {
   return receiptSchema.parse(await request('/enquiries', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': id }, body: JSON.stringify(data),

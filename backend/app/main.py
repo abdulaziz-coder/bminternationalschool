@@ -13,6 +13,7 @@ from .catalog import STAGES
 from .db import EnquiryRecord, engine, get_session
 from .schemas import EnquiryIn, Receipt
 from .admin import router as admin_router
+from .notices import admin_router as admin_notices_router, public_router as notices_router
 
 
 @asynccontextmanager
@@ -23,6 +24,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="BM International School API", version="0.2.0", lifespan=lifespan)
 app.include_router(admin_router)
+app.include_router(admin_notices_router)
+app.include_router(notices_router)
 Db = Annotated[AsyncSession, Depends(get_session)]
 
 

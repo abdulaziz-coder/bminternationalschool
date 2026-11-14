@@ -16,4 +16,29 @@ html:has(.admin-page){overflow-x:clip}
 .admin-delete-target{background:#f1f5fa;border:1px solid #dce6f0;border-radius:13px;padding:18px;margin:20px 0;overflow-wrap:anywhere}.admin-delete-target strong{display:block;font-size:15px}.admin-delete-target span{display:block;margin-top:7px;font-size:12px;color:#6b8499}
 .admin-delete-warning{font-size:13px;line-height:1.9;color:#7c5a52;margin:20px 0 25px}.admin-confirm-actions{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap}
 .admin-danger{border:1px solid #a53f3f;background:#a53f3f;color:#fff;border-radius:11px;padding:12px 18px;font-size:11px;cursor:pointer}.admin-danger:hover{background:#8f3333}.admin-danger:disabled{opacity:.6;cursor:wait}
+
+/* Contain visually hidden header labels so they cannot widen the page beyond the table's own scroll area. */
+.admin-table-scroll{position:relative}
+
+/* Section tabs and the notices editor. */
+.admin-tabs{display:flex;gap:4px;width:fit-content;max-width:100%;padding:5px;margin-bottom:30px;border-radius:14px;background:#e1eaf3}
+.admin-tabs button{padding:11px 22px;border:0;border-radius:10px;background:transparent;color:#4d6c85;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s,color .2s}
+.admin-tabs button:hover{background:#eef4fa}.admin-tabs button[aria-current=page]{background:#174265;color:#fff}
+.admin-title-actions{display:flex;flex-wrap:wrap;gap:10px}
+.admin-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border:1px solid #174265;border-radius:11px;background:#174265;color:#fff;font-size:11px;white-space:nowrap;cursor:pointer;transition:background .2s}
+.admin-primary:hover{background:#245c86}.admin-primary:disabled{opacity:.6;cursor:wait}
+.admin-notice-preview{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;max-width:420px;margin-top:6px;font-size:11px;line-height:1.6;color:#71889c;overflow-wrap:anywhere}
+.admin-empty .admin-primary{margin-top:14px}
+.admin-dialog-wide{width:640px}
+.admin-notice-form label{display:block;margin:0 0 18px;font-size:12px;color:#44647e}
+.admin-notice-form input:not([type=checkbox]),.admin-notice-form select,.admin-notice-form textarea{margin-top:8px}
+.admin-page textarea{display:block;width:100%;box-sizing:border-box;margin:0;padding:12px 13px;border:1px solid #cfdeeb;border-radius:10px;background:#fff;color:#174265;font-size:13px;line-height:1.7;resize:vertical;min-height:150px}
+.admin-notice-form [aria-invalid=true]{border-color:#c0705a}
+.admin-field-error{display:block;margin-top:7px;font-size:11px;color:#a34343}
+.admin-notice-form .admin-check{display:flex;align-items:flex-start;gap:11px;line-height:1.6;color:#174265}
+.admin-page .admin-check input{flex:none;width:18px;height:18px;margin:2px 0 0;padding:0;accent-color:#174265}
+.admin-check small{display:block;margin-top:3px;font-size:11px;color:#71889c}
+.admin-notice-form .admin-error{margin:0 0 18px}
+@media(max-width:700px){.admin-tabs{margin-bottom:22px}.admin-tabs button{padding:10px 16px}.admin-title-actions{width:100%}.admin-title-actions>*{flex:1}}
+@media(prefers-reduced-motion:reduce){.admin-tabs button,.admin-primary{transition:none}}
 .admin-success{padding:13px 18px;background:#e3f0e9;border:1px solid #c7dfd1;color:#386e53;border-radius:12px;font-size:12px;margin:0 0 20px}.admin-success strong{margin-left:8px;font-weight:600}

@@ -15,7 +15,12 @@ export type Enquiry = z.infer<typeof enquirySchema>;
 export const receiptSchema = z.object({
   id: z.uuid(), reference: z.string().regex(/^BM-\d{6,}$/), status: z.enum(['received', 'ready_for_review']), created_at: z.string(),
 });
-export const catalogSchema = z.array(z.object({
+export const noticeCategorySchema = z.enum(['news', 'admission_guide']);
+export const noticesSchema = z.array(z.object({
+  id: z.uuid(), category: noticeCategorySchema, title: z.string(), body: z.string(), published_at: z.string(),
+}));
+export type Notice = z.infer<typeof noticesSchema>[number];
+export const catalogSchema =z.array(z.object({
   id: z.string(), name: stageSchema, eyebrow: z.string(), title: z.string(), description: z.string(),
   highlights: z.array(z.string()),
 }));

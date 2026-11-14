@@ -39,6 +39,23 @@ class EnquiryRecord(Base):
         return f"BM-{self.reference_number:06d}"
 
 
+class NoticeRecord(Base):
+    __tablename__ = "notices"
+    __table_args__ = (CheckConstraint("category IN ('news', 'admission_guide')", name="ck_notices_category"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    category: Mapped[str] = mapped_column(String(20))
+    title: Mapped[str] = mapped_column(String(160))
+    body: Mapped[str] = mapped_column(Text)
+    # Drafts have no publication time; only published notices are public.
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    @property
+    def published(self) -> bool:
+        return self.published_at is not None
+
+
 async def get_session():
     async with Session() as session:
         yield session

@@ -30,6 +30,38 @@ class EnquiryIn(BaseModel):
         return re.sub(r"[ ().-]", "", value)
 
 
+NoticeCategory = Literal["news", "admission_guide"]
+
+
+class NoticeIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    category: NoticeCategory
+    title: str = Field(min_length=3, max_length=160)
+    body: str = Field(min_length=1, max_length=5000)
+    published: bool = True
+
+
+class PublicNotice(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    category: NoticeCategory
+    title: str
+    body: str
+    published_at: datetime
+
+
+class AdminNotice(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    category: NoticeCategory
+    title: str
+    body: str
+    published: bool
+    published_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
 class Receipt(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID

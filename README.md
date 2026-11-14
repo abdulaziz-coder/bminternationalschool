@@ -77,6 +77,14 @@ New admissions enquiries require a grade from 1 to 11. The selected grade is inc
 
 New enquiries also require a phone number. Common spaces, parentheses, and separators are accepted; 7–15 digits are required and formatting is normalized before saving. The number appears in the review, downloaded draft, and protected admin views and can be searched in the admin panel. The database upgrade preserves older enquiries without a phone number, which show “Not recorded”. Public receipt responses do not include contact information.
 
+## Notices
+
+The website has a Notices section (in the main navigation) for school news and admission guides, such as the guide for a new academic year. Visitors can filter by News or Admission guides; long notices collapse behind “Read more”, line breaks are kept, and web addresses become links.
+
+Admins manage notices in the Notices tab of the admin panel (http://127.0.0.1:3000/admin#notices): post a notice, edit it, hide it by unticking “Show on the website” (it stays as a draft), or delete it after a confirmation. A notice has a category, a title of 3–160 characters, and up to 5,000 characters of plain text. Notices are shown exactly as written in every site language; they are not translated.
+
+`GET /api/notices` returns published notices only, newest first, with no management fields. The protected `/api/admin/notices` endpoints use the same session cookie and origin check as the enquiry endpoints. The `notices` table is created by the initializer, so restart `python scripts/dev.py` once after this update.
+
 ## Backend commands (manual startup)
 
 From `backend/`, configure environment variables or copy `.env.example` to `.env`. Defaults match the native launcher. Run the initializer, then the API and worker in separate terminals:

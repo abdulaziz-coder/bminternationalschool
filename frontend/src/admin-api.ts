@@ -11,7 +11,8 @@ async function request(path: string, options?: RequestInit) {
   try { response = await fetch(`/api/admin${path}`, { ...options, credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(10_000) }); }
   catch { throw new AdminError(503, 'The local admin service is unavailable. Please check that the backend is running.'); }
   if (!response.ok) {
-    const messages: Record<number, string> = { 401: path === '/login' ? 'Incorrect username or password.' : 'Please sign in again.', 429: 'Too many sign-in attempts. Try again in a minute.', 503: path === '/login' ? 'Admin account is not configured. Run the local database initializer.' : 'The local admin service is unavailable. Please check that the backend is running.' };
+    const noticeMessages: Record<number, string> = path.startsWith('/notices') ? { 404: 'This notice no longer exists.', 422: 'Please check the notice and try again.' } : {};
+    const messages: Record<number, string> = { ...noticeMessages, 401: path === '/login' ? 'Incorrect username or password.' : 'Please sign in again.', 429: 'Too many sign-in attempts. Try again in a minute.', 503: path === '/login' ? 'Admin account is not configured. Run the local database initializer.' : 'The local admin service is unavailable. Please check that the backend is running.' };
     throw new AdminError(response.status, messages[response.status] ?? 'The local admin service is unavailable. Please check that the backend is running.');
   }
   return response.status === 204 ? null : response.json();
@@ -34,4 +35,16 @@ export async function markEnquiryReceived(id: string) {
 }
 export async function deleteEnquiry(id: string) {
   await request(`/enquiries/${id}`, { method: 'DELETE' });
+}
+
+const notice = z.object({ id: z.uuid(), category: z.enum(['news', 'admission_guide']), title: z.string(), body: z.string(), published: z.boolean(), published_at: z.string().nullable(), created_at: z.string(), updated_at: z.string() });
+export type AdminNotice = z.infer<typeof notice>;
+export type NoticeDraft = Pick<AdminNotice, 'category' | 'title' | 'body' | 'published'>;
+export async function adminNotices() { return z.array(notice).parse(await request('/notices')); }
+/** Creates a notice, or replaces the one with the given id. */
+export async function saveNotice(id: string | null, draft: NoticeDraft) {
+  return notice.parse(await request(id ? `/notices/${id}` : '/notices', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }));
+}
+export async function deleteNotice(id: string) {
+  await request(`/notices/${id}`, { method: 'DELETE' });
 }

@@ -4,12 +4,18 @@ import { motion, useReducedMotion } from 'framer-motion';
 import Brand from './Brand';
 import { LanguageSwitcher, useLanguage } from './i18n';
 import { AdminError, adminEnquiries, adminLogin, adminLogout, adminSession, markEnquiryReceived, deleteEnquiry, type AdminEnquiry } from './admin-api';
+import AdminNotices from './AdminNotices';
 import './admin.css';
+
+type Tab = 'enquiries' | 'notices';
 
 export default function Admin() {
   const { locale, t } = useLanguage();
   const reduced = useReducedMotion();
   const client = useQueryClient();
+  // The address keeps the open tab, so a reload returns to it.
+  const [tab, setTab] = useState<Tab>(() => window.location.hash === '#notices' ? 'notices' : 'enquiries');
+  function selectTab(next: Tab) { setTab(next); window.history.replaceState(null, '', next === 'notices' ? '#notices' : window.location.pathname); }
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
   const [search, setSearch] = useState('');
@@ -23,7 +29,7 @@ export default function Admin() {
   const cancelDelete = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const session = useQuery({ queryKey: ['admin', 'session'], queryFn: adminSession, retry: false, staleTime: 0 });
-  const list = useQuery({ queryKey: ['admin', 'enquiries', q, grade, status, page], queryFn: () => adminEnquiries({ q, grade, status, page }), enabled: !!session.data, retry: false, staleTime: 0, refetchInterval: 30_000 });
+  const list = useQuery({ queryKey: ['admin', 'enquiries', q, grade, status, page], queryFn: () => adminEnquiries({ q, grade, status, page }), enabled: !!session.data && tab === 'enquiries', retry: false, staleTime: 0, refetchInterval: 30_000 });
   useEffect(() => { const timer = setTimeout(() => { setQ(search.trim()); setPage(1); }, 300); return () => clearTimeout(timer); }, [search]);
   useEffect(() => {
     if (selected && !dialog.current?.open) dialog.current?.showModal();
@@ -32,7 +38,7 @@ export default function Admin() {
   useEffect(() => { if (confirmDelete) cancelDelete.current?.focus(); }, [confirmDelete]);
   useEffect(() => { if (list.data && page > Math.max(1, Math.ceil(list.data.total / list.data.page_size))) setPage(Math.max(1, Math.ceil(list.data.total / list.data.page_size))); }, [list.data, page]);
   useEffect(() => {
-    if (!session.data) { setSelected(null); client.removeQueries({ queryKey: ['admin', 'enquiries'] }); }
+    if (!session.data) { setSelected(null); client.removeQueries({ queryKey: ['admin', 'enquiries'] }); client.removeQueries({ queryKey: ['admin', 'notices'] }); }
   }, [session.data, client]);
   useEffect(() => {
     if (list.error instanceof AdminError && list.error.status === 401) client.setQueryData(['admin', 'session'], null);
@@ -72,9 +78,11 @@ export default function Admin() {
         </form>}
         <p className="admin-access-hint">{t('Your local sign-in details are in .local/admin-access.txt.')}</p><a className="text-link" href="/">← {t('Back to website')}</a>
       </motion.section> : <>
+        {logout.isError && <p className="admin-error" role="alert">{errorMessage(logout.error)}</p>}
+        <nav className="admin-tabs" aria-label={t('Admin sections')}>{(['enquiries', 'notices'] as const).map(value => <button key={value} type="button" aria-current={tab === value ? 'page' : undefined} onClick={() => selectTab(value)}>{t(value === 'enquiries' ? 'Enquiries' : 'Notices')}</button>)}</nav>
+        {tab === 'notices' ? <AdminNotices onSignedOut={() => client.setQueryData(['admin', 'session'], null)} /> : <>
         <div className="admin-title"><div><p className="admin-eyebrow">{t('Admissions admin')}</p><h1>{t('Admissions enquiries')}</h1><p>{t('Review enquiries from families, all in one place.')}</p></div><a className="admin-secondary" href="/">{t('Back to website')} ↗</a></div>
         {deletedReference && <p className="admin-success" role="status">{t('Enquiry deleted.')} <strong>{deletedReference}</strong></p>}
-        {logout.isError && <p className="admin-error" role="alert">{errorMessage(logout.error)}</p>}
         <div className="admin-stats">{([['All enquiries', list.data?.stats.total], ['Received', list.data?.stats.received], ['Ready for review', list.data?.stats.ready_for_review]] as const).map(([label, count], index) => <div key={label} className={index === 0 ? 'admin-stat featured' : 'admin-stat'}><span>{t(label)}</span><strong>{count ?? '—'}</strong><i aria-hidden="true">{['↗', '↓', '✓'][index]}</i></div>)}</div>
         <section className="admin-inbox" aria-label={t('Enquiries')}>
           <div className="admin-toolbar"><label className="admin-search" htmlFor="admin-search"><span className="sr-only">{t('Search enquiries')}</span><span aria-hidden="true">⌕</span><input id="admin-search" type="search" placeholder={t('Search by name, email, phone, or reference')} value={search} maxLength={200} onChange={event => setSearch(event.target.value)} /></label>
@@ -87,6 +95,7 @@ export default function Admin() {
           </> : <div className="admin-empty"><span aria-hidden="true">↙</span><h2>{t(q || grade || status ? 'No matching enquiries.' : 'No enquiries yet.')}</h2><p>{t(q || grade || status ? 'Try another search or clear your filters.' : 'New admissions enquiries will appear here.')}</p>{(q || grade || status) && <button className="admin-secondary" onClick={clear}>{t('Clear filters')}</button>}</div>}
           <div className="admin-pagination"><span>{list.data?.total ?? 0} {t('results')} · {t('Page')} {page} {t('of')} {Math.max(1, Math.ceil((list.data?.total ?? 0) / 25))}</span><div><button className="admin-secondary" disabled={page === 1 || list.isFetching} onClick={() => setPage(page - 1)}>← {t('Previous')}</button><button className="admin-secondary" disabled={!list.data || page * 25 >= list.data.total || list.isFetching} onClick={() => setPage(page + 1)}>{t('Next')} →</button></div></div>
         </section><p className="admin-workflow-note">{t('Ready for review means prepared by the local workflow, not reviewed by school staff.')}</p>
+        </>}
       </>}
       <p className="admin-local-footer">{t('Local database · no emails are sent')}</p>
     </main>
