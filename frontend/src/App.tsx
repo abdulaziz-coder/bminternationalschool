@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring, useTransform, useVelocity } from 'framer-motion';
 import Admissions from './Admissions';
 import Notices from './Notices';
+import SocialLinks from './Social';
 import Brand from './Brand';
 import Accordion from './Accordion';
 import Photo, { photos } from './Photo';
@@ -92,6 +93,9 @@ export default function App() {
         ['Can I arrange a school visit?', 'Visit arrangements and the campus address have not yet been provided. Include your interest in a visit in your enquiry.'],
       ].map(([question, answer]) => <motion.div key={question} variants={slideItem}><Accordion question={t(question)} answer={t(answer)} /></motion.div>)}</motion.div></section>
       <Admissions />
-    </main><footer><Brand /><p>{t("A world of possibility.")}<br /><small>© {new Date().getFullYear()} {" "}{t("Boborahim Mashrab International School")} · {t("Website concept")}</small></p><div className="flex flex-wrap gap-5"><a className="text-link" href="/admin">{t("Admin panel")} ↗</a><a className="text-link" href="#">{t("Back to top")} ↑</a></div></footer>
+    </main><footer className="site-footer">
+      <div className="footer-main"><div className="footer-brand"><Brand /><p>{t("A world of possibility.")}</p></div><SocialLinks /></div>
+      <div className="footer-base"><small>© {new Date().getFullYear()} {" "}{t("Boborahim Mashrab International School")} · {t("Website concept")}</small><div className="footer-base-links"><a className="text-link" href="/admin">{t("Admin panel")} ↗</a><a className="text-link" href="#">{t("Back to top")} ↑</a></div></div>
+    </footer>
   </>;
 }

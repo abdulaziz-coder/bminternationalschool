@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, Identity, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, Identity, Integer, String, Text, UniqueConstraint, false
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -41,13 +41,15 @@ class EnquiryRecord(Base):
 
 class NoticeRecord(Base):
     __tablename__ = "notices"
-    __table_args__ = (CheckConstraint("category IN ('news', 'admission_guide')", name="ck_notices_category"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    category: Mapped[str] = mapped_column(String(20))
+    # A label chosen or created by an admin, stored as written (for example "News").
+    category: Mapped[str] = mapped_column(String(40), index=True)
     title: Mapped[str] = mapped_column(String(160))
     body: Mapped[str] = mapped_column(Text)
     # Drafts have no publication time; only published notices are public.
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    # Pinned notices are listed first and highlighted on the website.
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 

@@ -66,9 +66,25 @@
   font-weight: 600;
 }
 
-.notice-card.admission_guide .notice-badge {
+/* Badge colours: News, Admission guide, then three slots shared by admin-created categories. */
+.notice-card.tone-1 .notice-badge {
   background: var(--gold-soft);
   color: var(--gold-ink);
+}
+
+.notice-card.tone-2 .notice-badge {
+  background: #e4f3ec;
+  color: #2f7355;
+}
+
+.notice-card.tone-3 .notice-badge {
+  background: #efeafb;
+  color: #5b4a9c;
+}
+
+.notice-card.tone-4 .notice-badge {
+  background: #fdebe6;
+  color: #a4513c;
 }
 
 .notice-card h3 {
@@ -174,4 +190,57 @@
   .notice-filters button {
     transition: none;
   }
+}
+
+/* Pinned notices: listed first as full-width featured cards. */
+.notice-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.notice-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 30px;
+  background: var(--gold);
+  color: #173954;
+  font-weight: 700;
+}
+
+.notice-card.pinned {
+  grid-column: 1 / -1;
+  padding: 32px;
+  border-color: #ecd5a4;
+  background: linear-gradient(120deg, #fff8ea 0%, #fff 60%);
+  box-shadow: 0 12px 36px #7955160f;
+}
+
+.notice-card.pinned h3 {
+  font-size: clamp(24px, 2.4vw, 31px);
+  line-height: 1.2;
+}
+
+.notice-card.pinned .notice-body {
+  max-width: 78ch;
+  font-size: 16px;
+  color: #4d6378;
+}
+
+@media (max-width: 700px) {
+  .notice-card.pinned {
+    padding: 24px 22px;
+  }
+}
+
+/* Keep the date on one line; on narrow cards it moves below the tags as a whole. */
+.notice-meta {
+  flex-wrap: wrap;
+}
+
+.notice-meta time {
+  white-space: nowrap;
 }

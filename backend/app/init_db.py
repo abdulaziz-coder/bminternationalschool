@@ -18,6 +18,13 @@ async def main():
         await connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_enquiries_reference_number ON enquiries (reference_number)"))
         await connection.execute(text("ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS staff_received_at TIMESTAMPTZ"))
         await connection.execute(text("ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS phone VARCHAR(20)"))
+        await connection.execute(text("ALTER TABLE notices ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE"))
+        # Categories became admin-defined labels; convert the two original fixed codes once.
+        await connection.execute(text("ALTER TABLE notices DROP CONSTRAINT IF EXISTS ck_notices_category"))
+        await connection.execute(text("ALTER TABLE notices ALTER COLUMN category TYPE VARCHAR(40)"))
+        await connection.execute(text("CREATE INDEX IF NOT EXISTS ix_notices_category ON notices (category)"))
+        await connection.execute(text("UPDATE notices SET category = 'News' WHERE category = 'news'"))
+        await connection.execute(text("UPDATE notices SET category = 'Admission guide' WHERE category = 'admission_guide'"))
     await engine.dispose()
     ensure_admin_account()
     print("Local admissions database initialized.")

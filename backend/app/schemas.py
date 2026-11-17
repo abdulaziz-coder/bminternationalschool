@@ -30,33 +30,47 @@ class EnquiryIn(BaseModel):
         return re.sub(r"[ ().-]", "", value)
 
 
-NoticeCategory = Literal["news", "admission_guide"]
+DEFAULT_NOTICE_CATEGORIES = ("News", "Admission guide")
 
 
 class NoticeIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
-    category: NoticeCategory
+    category: str = Field(min_length=2, max_length=40)
     title: str = Field(min_length=3, max_length=160)
     body: str = Field(min_length=1, max_length=5000)
     published: bool = True
+    pinned: bool = False
+
+    @field_validator("category")
+    @classmethod
+    def tidy_category(cls, value: str) -> str:
+        # One line, single spaces: categories are short labels shown as filter buttons.
+        return " ".join(value.split())
+
+
+class NoticePin(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    pinned: bool
 
 
 class PublicNotice(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
-    category: NoticeCategory
+    category: str
     title: str
     body: str
+    pinned: bool
     published_at: datetime
 
 
 class AdminNotice(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
-    category: NoticeCategory
+    category: str
     title: str
     body: str
     published: bool
+    pinned: bool
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime

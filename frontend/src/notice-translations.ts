@@ -20,6 +20,11 @@ export const noticeUz = {
   'This permanently removes the notice from the website. This cannot be undone.': 'E’lon saytdan butunlay o‘chiriladi. Buni ortga qaytarib bo‘lmaydi.',
   'Post your first notice to show it on the website.': 'Saytda ko‘rsatish uchun birinchi e’loningizni joylang.',
   'Please enter a title of at least 3 characters.': 'Kamida 3 belgidan iborat sarlavha kiriting.', 'Please enter the notice text.': 'E’lon matnini kiriting.',
+  'New category': 'Yangi turkum', 'Category name': 'Turkum nomi', 'Please choose or enter a category.': 'Turkumni tanlang yoki kiriting.',
+  'A new category becomes a filter on the website, shown exactly as written.': 'Yangi turkum saytda filtr bo‘lib, aynan yozilganidek ko‘rsatiladi.',
+  'Pinned': 'Qadalgan', 'Pin': 'Qadash', 'Unpin': 'Qadashni bekor qilish', 'Pin to the top of the notices': 'E’lonlar boshiga qadash',
+  'Pinned notices stay first on the website and are highlighted.': 'Qadalgan e’lonlar saytda birinchi turadi va ajratib ko‘rsatiladi.',
+  'Notice pinned.': 'E’lon qadaldi.', 'Notice unpinned.': 'E’lon qadashdan olindi.',
   'Please check the notice and try again.': 'E’lonni tekshirib, qayta urinib ko‘ring.', 'This notice no longer exists.': 'Bu e’lon endi mavjud emas.',
 };
 export const noticeRu: Record<keyof typeof noticeUz, string> = {
@@ -42,5 +47,10 @@ export const noticeRu: Record<keyof typeof noticeUz, string> = {
   'This permanently removes the notice from the website. This cannot be undone.': 'Объявление будет навсегда удалено с сайта. Это действие нельзя отменить.',
   'Post your first notice to show it on the website.': 'Опубликуйте первое объявление, чтобы показать его на сайте.',
   'Please enter a title of at least 3 characters.': 'Введите заголовок не короче 3 символов.', 'Please enter the notice text.': 'Введите текст объявления.',
+  'New category': 'Новая категория', 'Category name': 'Название категории', 'Please choose or enter a category.': 'Выберите или введите категорию.',
+  'A new category becomes a filter on the website, shown exactly as written.': 'Новая категория станет фильтром на сайте и будет показана в том виде, в каком написана.',
+  'Pinned': 'Закреплено', 'Pin': 'Закрепить', 'Unpin': 'Открепить', 'Pin to the top of the notices': 'Закрепить вверху объявлений',
+  'Pinned notices stay first on the website and are highlighted.': 'Закреплённые объявления показываются на сайте первыми и выделяются.',
+  'Notice pinned.': 'Объявление закреплено.', 'Notice unpinned.': 'Объявление откреплено.',
   'Please check the notice and try again.': 'Проверьте объявление и повторите попытку.', 'This notice no longer exists.': 'Это объявление больше не существует.',
 };

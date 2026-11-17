@@ -37,13 +37,17 @@ export async function deleteEnquiry(id: string) {
   await request(`/enquiries/${id}`, { method: 'DELETE' });
 }
 
-const notice = z.object({ id: z.uuid(), category: z.enum(['news', 'admission_guide']), title: z.string(), body: z.string(), published: z.boolean(), published_at: z.string().nullable(), created_at: z.string(), updated_at: z.string() });
+const notice = z.object({ id: z.uuid(), category: z.string(), title: z.string(), body: z.string(), published: z.boolean(), pinned: z.boolean(), published_at: z.string().nullable(), created_at: z.string(), updated_at: z.string() });
 export type AdminNotice = z.infer<typeof notice>;
-export type NoticeDraft = Pick<AdminNotice, 'category' | 'title' | 'body' | 'published'>;
+export type NoticeDraft = Pick<AdminNotice, 'category' | 'title' | 'body' | 'published' | 'pinned'>;
 export async function adminNotices() { return z.array(notice).parse(await request('/notices')); }
 /** Creates a notice, or replaces the one with the given id. */
 export async function saveNotice(id: string | null, draft: NoticeDraft) {
   return notice.parse(await request(id ? `/notices/${id}` : '/notices', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }));
+}
+/** Pins or unpins a notice without changing anything else about it. */
+export async function pinNotice(id: string, pinned: boolean) {
+  return notice.parse(await request(`/notices/${id}/pinned`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pinned }) }));
 }
 export async function deleteNotice(id: string) {
   await request(`/notices/${id}`, { method: 'DELETE' });

@@ -79,11 +79,11 @@ New enquiries also require a phone number. Common spaces, parentheses, and separ
 
 ## Notices
 
-The website has a Notices section (in the main navigation) for school news and admission guides, such as the guide for a new academic year. Visitors can filter by News or Admission guides; long notices collapse behind “Read more”, line breaks are kept, and web addresses become links.
+The website has a Notices section (in the main navigation) for school news and admission guides, such as the guide for a new academic year. Visitors can filter by category; long notices collapse behind “Read more”, line breaks are kept, and web addresses become links.
 
-Admins manage notices in the Notices tab of the admin panel (http://127.0.0.1:3000/admin#notices): post a notice, edit it, hide it by unticking “Show on the website” (it stays as a draft), or delete it after a confirmation. A notice has a category, a title of 3–160 characters, and up to 5,000 characters of plain text. Notices are shown exactly as written in every site language; they are not translated.
+Admins manage notices in the Notices tab of the admin panel (http://127.0.0.1:3000/admin#notices): post a notice, edit it, hide it by unticking “Show on the website” (it stays as a draft), or delete it after a confirmation. Important notices can be pinned, from the Pin button in the list or the checkbox in the editor: pinned notices are listed first on the website as highlighted full-width cards until they are unpinned. A notice has a category, a title of 3–160 characters, and up to 5,000 characters of plain text. In the editor an admin picks an existing category or creates a new one (2–40 characters); the website's filter buttons are built from the categories of the published notices. Typing an existing category in different capitals reuses it. The two starting categories, News and Admission guide, are translated; categories created by admins are shown as written. Notices are shown exactly as written in every site language; they are not translated.
 
-`GET /api/notices` returns published notices only, newest first, with no management fields. The protected `/api/admin/notices` endpoints use the same session cookie and origin check as the enquiry endpoints. The `notices` table is created by the initializer, so restart `python scripts/dev.py` once after this update.
+`GET /api/notices` returns published notices only, newest first, with no management fields. `PATCH /api/admin/notices/{id}/pinned` pins or unpins one notice without changing its text or date. The protected `/api/admin/notices` endpoints use the same session cookie and origin check as the enquiry endpoints. The `notices` table is created by the initializer, so restart `python scripts/dev.py` once after this update.
 
 ## Backend commands (manual startup)
 

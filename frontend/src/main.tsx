@@ -12,6 +12,7 @@ import './photos.css';
 import './languages.css';
 import './responsive.css';
 import './scroll-fx.css';
+import './social.css';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 60_000 } } });
 const Admin = lazy(() => import('./Admin'));

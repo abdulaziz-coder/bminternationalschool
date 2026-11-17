@@ -8,6 +8,10 @@ import AdminNotices from './AdminNotices';
 import './admin.css';
 
 type Tab = 'enquiries' | 'notices';
+const sectionIcons = {
+  enquiries: <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round"><path d="M4 13.500 6.200 5.500h11.600L20 13.500V18a1.500 1.500 0 0 1-1.500 1.500h-13A1.500 1.500 0 0 1 4 18z" /><path d="M4 13.500h4.500l1 2h5l1-2H20" /></svg>,
+  notices: <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.700" strokeLinejoin="round" strokeLinecap="round"><path d="M4 10v4h3l6 4V6l-6 4z" /><path d="M16.500 9.500a3.500 3.500 0 0 1 0 5M18.800 7a7 7 0 0 1 0 10" /></svg>,
+};
 
 export default function Admin() {
   const { locale, t } = useLanguage();
@@ -66,7 +70,7 @@ export default function Admin() {
   return <div className="admin-page">
     <a className="skip" href="#admin-main">{t('Skip to content')}</a>
     <header className="admin-header"><Brand /><div className="admin-header-actions"><span className="local-badge"><i />{t('Local access only')}</span><LanguageSwitcher />{session.data && <button className="admin-secondary" onClick={() => logout.mutate()} disabled={logout.isPending}>{t('Sign out')}</button>}</div></header>
-    <main id="admin-main" className="admin-main">
+    <main id="admin-main" className={session.data ? 'admin-main admin-main-wide' : 'admin-main'}>
       {!session.data ? <motion.section className="admin-login" initial={reduced ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <span className="admin-lock" aria-hidden="true"><svg viewBox="0 0 24 24" width="27" height="27"><rect x="5" y="10" width="14" height="11" rx="3" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg></span>
         <p className="admin-eyebrow">{t('Admissions admin')}</p><h1>{t('Admin sign-in')}</h1><p>{t('Sign in to view admissions enquiries.')}</p>
@@ -79,7 +83,7 @@ export default function Admin() {
         <p className="admin-access-hint">{t('Your local sign-in details are in .local/admin-access.txt.')}</p><a className="text-link" href="/">← {t('Back to website')}</a>
       </motion.section> : <>
         {logout.isError && <p className="admin-error" role="alert">{errorMessage(logout.error)}</p>}
-        <nav className="admin-tabs" aria-label={t('Admin sections')}>{(['enquiries', 'notices'] as const).map(value => <button key={value} type="button" aria-current={tab === value ? 'page' : undefined} onClick={() => selectTab(value)}>{t(value === 'enquiries' ? 'Enquiries' : 'Notices')}</button>)}</nav>
+        <div className="admin-layout"><aside className="admin-sidebar"><p className="admin-eyebrow">{t('Admin sections')}</p><nav className="admin-tabs" aria-label={t('Admin sections')}>{(['enquiries', 'notices'] as const).map(value => <button key={value} type="button" aria-current={tab === value ? 'page' : undefined} onClick={() => selectTab(value)}>{sectionIcons[value]}<span>{t(value === 'enquiries' ? 'Enquiries' : 'Notices')}</span>{value === 'enquiries' && list.data && <b>{list.data.stats.total}</b>}</button>)}</nav></aside><div className="admin-content">
         {tab === 'notices' ? <AdminNotices onSignedOut={() => client.setQueryData(['admin', 'session'], null)} /> : <>
         <div className="admin-title"><div><p className="admin-eyebrow">{t('Admissions admin')}</p><h1>{t('Admissions enquiries')}</h1><p>{t('Review enquiries from families, all in one place.')}</p></div><a className="admin-secondary" href="/">{t('Back to website')} ↗</a></div>
         {deletedReference && <p className="admin-success" role="status">{t('Enquiry deleted.')} <strong>{deletedReference}</strong></p>}
@@ -96,6 +100,7 @@ export default function Admin() {
           <div className="admin-pagination"><span>{list.data?.total ?? 0} {t('results')} · {t('Page')} {page} {t('of')} {Math.max(1, Math.ceil((list.data?.total ?? 0) / 25))}</span><div><button className="admin-secondary" disabled={page === 1 || list.isFetching} onClick={() => setPage(page - 1)}>← {t('Previous')}</button><button className="admin-secondary" disabled={!list.data || page * 25 >= list.data.total || list.isFetching} onClick={() => setPage(page + 1)}>{t('Next')} →</button></div></div>
         </section><p className="admin-workflow-note">{t('Ready for review means prepared by the local workflow, not reviewed by school staff.')}</p>
         </>}
+        </div></div>
       </>}
       <p className="admin-local-footer">{t('Local database · no emails are sent')}</p>
     </main>
