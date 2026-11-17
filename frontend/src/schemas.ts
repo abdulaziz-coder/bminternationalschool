@@ -16,7 +16,7 @@ export const receiptSchema = z.object({
   id: z.uuid(), reference: z.string().regex(/^BM-\d{6,}$/), status: z.enum(['received', 'ready_for_review']), created_at: z.string(),
 });
 export const noticesSchema = z.array(z.object({
-  id: z.uuid(), category: z.string(), title: z.string(), body: z.string(), pinned: z.boolean(), published_at: z.string(),
+  id: z.uuid(), category: z.string(), category_label: z.string().nullable(), title: z.string(), body: z.string(), lang: z.enum(['uz', 'en', 'ru']), pinned: z.boolean(), published_at: z.string(),
 }));
 export type Notice = z.infer<typeof noticesSchema>[number];
 export const catalogSchema =z.array(z.object({

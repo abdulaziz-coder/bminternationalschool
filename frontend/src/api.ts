@@ -16,7 +16,8 @@ export async function getStages() {
   // Ignore the retired stage if an older local API is still running during an update.
   return catalogSchema.parse(Array.isArray(data) ? data.filter(stage => stage?.id !== 'early') : data);
 }
-export async function getNotices() { return noticesSchema.parse(await request('/notices')); }
+/** Published notices in the given language; a notice not written in it comes back in another language. */
+export async function getNotices(language: 'uz' | 'en' | 'ru') { return noticesSchema.parse(await request(`/notices?lang=${language}`)); }
 export async function submitEnquiry(data: Enquiry, id: string) {
   return receiptSchema.parse(await request('/enquiries', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': id }, body: JSON.stringify(data),

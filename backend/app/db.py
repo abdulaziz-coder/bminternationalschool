@@ -46,6 +46,13 @@ class NoticeRecord(Base):
     category: Mapped[str] = mapped_column(String(40), index=True)
     title: Mapped[str] = mapped_column(String(160))
     body: Mapped[str] = mapped_column(Text)
+    # The same notice in each language it has been written in. `title` and `body` above hold the first of these.
+    title_uz: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    body_uz: Mapped[str | None] = mapped_column(Text, nullable=True)
+    title_en: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    body_en: Mapped[str | None] = mapped_column(Text, nullable=True)
+    title_ru: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    body_ru: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Drafts have no publication time; only published notices are public.
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     # Pinned notices are listed first and highlighted on the website.
@@ -56,6 +63,15 @@ class NoticeRecord(Base):
     @property
     def published(self) -> bool:
         return self.published_at is not None
+
+
+class NoticeCategoryRecord(Base):
+    """Names of an admin-created notice category in each language. `name` matches NoticeRecord.category."""
+    __tablename__ = "notice_categories"
+    name: Mapped[str] = mapped_column(String(40), primary_key=True)
+    label_uz: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    label_en: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    label_ru: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
 
 class StudentRecord(Base):

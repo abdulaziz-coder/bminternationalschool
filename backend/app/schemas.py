@@ -33,11 +33,25 @@ class EnquiryIn(BaseModel):
 DEFAULT_NOTICE_CATEGORIES = ("News", "Admission guide")
 
 
+# The website's languages; Uzbek first because it is the site's default.
+LANGUAGES = ("uz", "en", "ru")
+Language = Literal["uz", "en", "ru"]
+
+
+class NoticeText(BaseModel):
+    """A notice as written in one language."""
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    title: str = Field(min_length=3, max_length=160)
+    body: str = Field(min_length=1, max_length=5000)
+
+
 class NoticeIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
     category: str = Field(min_length=2, max_length=40)
-    title: str = Field(min_length=3, max_length=160)
-    body: str = Field(min_length=1, max_length=5000)
+    # The notice in each language it has been written in; at least one is required.
+    translations: dict[Language, NoticeText] = Field(min_length=1)
+    # Names of an admin-created category in each language; omitted to leave them unchanged.
+    category_labels: dict[Language, str] | None = None
     published: bool = True
     pinned: bool = False
 
@@ -47,6 +61,16 @@ class NoticeIn(BaseModel):
         # One line, single spaces: categories are short labels shown as filter buttons.
         return " ".join(value.split())
 
+    @field_validator("category_labels")
+    @classmethod
+    def tidy_labels(cls, value: dict[str, str] | None) -> dict[str, str] | None:
+        if value is None:
+            return None
+        labels = {language: " ".join(label.split()) for language, label in value.items()}
+        if any(len(label) > 40 for label in labels.values()):
+            raise ValueError("Category names can be up to 40 characters.")
+        return {language: label for language, label in labels.items() if label}
+
 
 class NoticePin(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -54,21 +78,26 @@ class NoticePin(BaseModel):
 
 
 class PublicNotice(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    """A published notice in one language, chosen for the visitor."""
     id: UUID
     category: str
+    # The category's name in the visitor's language, when an admin has provided one.
+    category_label: str | None
     title: str
     body: str
+    # The language the title and body are actually in, which may be a fallback.
+    lang: Language
     pinned: bool
     published_at: datetime
 
 
 class AdminNotice(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
     id: UUID
     category: str
+    category_labels: dict[Language, str]
+    # The first language written, for lists.
     title: str
-    body: str
+    translations: dict[Language, NoticeText]
     published: bool
     pinned: bool
     published_at: datetime | None

@@ -50,9 +50,15 @@ export async function deleteEnquiry(id: string) {
   await request(`/enquiries/${id}`, { method: 'DELETE' });
 }
 
-const notice = z.object({ id: z.uuid(), category: z.string(), title: z.string(), body: z.string(), published: z.boolean(), pinned: z.boolean(), published_at: z.string().nullable(), created_at: z.string(), updated_at: z.string() });
+const noticeLanguage = z.enum(['uz', 'en', 'ru']);
+const notice = z.object({
+  id: z.uuid(), category: z.string(), category_labels: z.partialRecord(noticeLanguage, z.string()), title: z.string(),
+  translations: z.partialRecord(noticeLanguage, z.object({ title: z.string(), body: z.string() })),
+  published: z.boolean(), pinned: z.boolean(), published_at: z.string().nullable(), created_at: z.string(), updated_at: z.string(),
+});
 export type AdminNotice = z.infer<typeof notice>;
-export type NoticeDraft = Pick<AdminNotice, 'category' | 'title' | 'body' | 'published' | 'pinned'>;
+/** What the editor sends: the notice in each language written, and the names of an admin-created category. */
+export type NoticeDraft = Pick<AdminNotice, 'category' | 'translations' | 'published' | 'pinned'> & { category_labels?: AdminNotice['category_labels'] };
 export async function adminNotices() { return z.array(notice).parse(await request('/notices')); }
 /** Creates a notice, or replaces the one with the given id. */
 export async function saveNotice(id: string | null, draft: NoticeDraft) {
