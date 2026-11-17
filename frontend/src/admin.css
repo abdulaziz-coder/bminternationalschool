@@ -71,3 +71,43 @@ html:has(.admin-page){overflow-x:clip}
 .admin-category input{margin-top:12px}
 .admin-category-hint{display:block;margin-top:7px;font-size:11px;line-height:1.6;color:#71889c}
 @media(prefers-reduced-motion:reduce){.admin-chip{transition:none}}
+
+/* Students: list rows, the add/edit form, and the Excel import dialog. */
+.admin-secondary svg,.admin-primary svg{flex:none}
+.admin-person{display:flex;align-items:center;gap:13px;min-width:0}
+.admin-avatar{display:grid;flex:none;place-items:center;width:36px;height:36px;border-radius:12px;background:#e3edf6;color:#2c5d84;font-size:13px;font-weight:700}
+.admin-class{display:inline-block;padding:6px 11px;border-radius:50px;background:#eef3f9;color:#2c5d84;font-size:11px;white-space:nowrap}
+.admin-parent{display:block;font-size:12px;overflow-wrap:anywhere}
+.admin-empty-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:14px}.admin-empty-actions .admin-primary{margin-top:0}
+.admin-form-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.admin-form-row.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.admin-notice-form label small{color:#7a8fa2;font-size:10px}
+.admin-dropzone{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;margin-top:6px;padding:38px 20px;border:1.5px dashed #b9cee0;border-radius:18px;background:#f4f8fc;color:#174265;cursor:pointer;transition:background .2s,border-color .2s}
+.admin-dropzone:hover,.admin-dropzone.dragging{border-color:#174265;background:#e9f1f8}
+.admin-dropzone svg{color:#2f7355;margin-bottom:6px}.admin-dropzone strong{font-size:15px;font-weight:600}.admin-dropzone span{font-size:12px;color:#6b8499}
+.admin-import-hint{margin:16px 0 10px;font-size:12px;line-height:1.8;color:#6b8499}
+.admin-template-link{display:inline-flex;align-items:center;min-height:36px;font-size:12px;font-weight:600;color:#286892}.admin-template-link:hover{text-decoration:underline}
+.admin-file{display:flex;align-items:center;gap:10px;margin-top:6px;padding:12px 14px;border:1px solid #dce6f0;border-radius:13px;background:#f4f8fc;font-size:12px}
+.admin-file svg{flex:none;color:#2f7355}.admin-file span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.admin-import-status{margin:18px 0;font-size:13px;line-height:1.7;color:#6b8499}
+.admin-import-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
+.admin-import-summary>div{padding:14px 16px;border:1px solid #dce6f0;border-radius:14px;background:#fff}
+.admin-import-summary strong{display:block;font-family:Manrope,sans-serif;font-size:26px;font-weight:600;line-height:1.2}
+.admin-import-summary span{display:block;margin-top:4px;font-size:11px;line-height:1.5;color:#687e91}
+.admin-import-summary .good{border-color:#c7dfd1;background:#eef7f2}.admin-import-summary .good strong{color:#2f7355}
+.admin-import-summary .bad{border-color:#f0d3c6;background:#fff5ef}.admin-import-summary .bad strong{color:#a4513c}
+.admin-import-list{margin-bottom:16px}.admin-import-list h3{margin:0 0 8px;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:0;color:#44647e}
+.admin-import-list ul{max-height:168px;margin:0;padding:0;overflow-y:auto;border:1px solid #e1eaf2;border-radius:12px;list-style:none}
+.admin-import-list li{display:flex;justify-content:space-between;gap:14px;padding:9px 13px;font-size:12px;line-height:1.5}.admin-import-list li+li{border-top:1px solid #eef3f8}
+.admin-import-list li span:first-child{min-width:0;overflow-wrap:anywhere}.admin-import-list li span:last-child{flex:none;max-width:55%;color:#6b8499;text-align:right}
+.admin-import-list.problems li span:last-child{color:#a4513c}.admin-import-list p{margin:7px 0 0;font-size:11px;color:#7a8fa2}
+.admin-dialog .admin-confirm-actions{margin-top:22px}
+@media(max-width:700px){.admin-form-row,.admin-form-row.two{grid-template-columns:minmax(0,1fr);gap:0}.admin-import-summary{gap:6px}.admin-import-summary>div{padding:11px}.admin-import-summary strong{font-size:22px}.admin-import-list li{flex-direction:column;gap:2px}.admin-import-list li span:last-child{max-width:none;text-align:left}}
+@media(prefers-reduced-motion:reduce){.admin-dropzone{transition:none}}
+
+/* Three sections in the narrow-screen tab bar: tighter tabs, no icons on phones, and scrolling as a last resort. */
+@media(max-width:960px){.admin-sidebar{overflow-x:auto;scrollbar-width:none}.admin-tabs button{white-space:nowrap}}
+@media(max-width:520px){.admin-sidebar{width:100%}.admin-tabs button{flex:1;justify-content:center;gap:7px;padding:9px 10px}.admin-tabs button svg{display:none}.admin-tabs button span{flex:none}}
+
+/* The upload limit, shown every time the import dialog is open. */
+.admin-limit-note{display:flex;align-items:flex-start;gap:11px;margin:0 0 16px;padding:13px 15px;border:1px solid #ecd5a4;border-radius:13px;background:#fff8ea;color:#6b4c14;font-size:12px;line-height:1.7}
+.admin-limit-note svg{flex:none;margin-top:1px}.admin-limit-note strong{display:block;font-size:12px;font-weight:700}

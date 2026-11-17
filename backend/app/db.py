@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, Identity, Integer, String, Text, UniqueConstraint, false
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, Identity, Integer, String, Text, UniqueConstraint, false
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -56,6 +56,21 @@ class NoticeRecord(Base):
     @property
     def published(self) -> bool:
         return self.published_at is not None
+
+
+class StudentRecord(Base):
+    __tablename__ = "students"
+    __table_args__ = (CheckConstraint("grade BETWEEN 1 AND 11", name="ck_students_grade"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    full_name: Mapped[str] = mapped_column(String(120), index=True)
+    grade: Mapped[int] = mapped_column(Integer, index=True)
+    # The class within a grade, such as "A"; optional.
+    class_name: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    parent_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    parent_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 async def get_session():

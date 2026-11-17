@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 import re
@@ -82,3 +82,70 @@ class Receipt(BaseModel):
     reference: str
     status: Literal["received", "ready_for_review"]
     created_at: datetime
+
+
+def normalise_phone(value: str) -> str:
+    if not re.fullmatch(r"\+?[0-9 ().-]+", value):
+        raise ValueError("Enter a valid phone number.")
+    digits = re.sub(r"[^0-9]", "", value)
+    if not 7 <= len(digits) <= 15:
+        raise ValueError("Use 7 to 15 digits.")
+    return re.sub(r"[ ().-]", "", value)
+
+
+class StudentIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    full_name: str = Field(min_length=2, max_length=120)
+    grade: int = Field(ge=1, le=11, strict=True)
+    class_name: str | None = Field(default=None, max_length=10)
+    birth_date: date | None = None
+    parent_name: str | None = Field(default=None, max_length=120)
+    parent_phone: str | None = Field(default=None, max_length=32)
+
+    @field_validator("class_name", "parent_name", "parent_phone")
+    @classmethod
+    def empty_is_missing(cls, value: str | None) -> str | None:
+        return value or None
+
+    @field_validator("parent_phone")
+    @classmethod
+    def validate_phone(cls, value: str | None) -> str | None:
+        return normalise_phone(value) if value else None
+
+    @field_validator("birth_date")
+    @classmethod
+    def plausible_birth_date(cls, value: date | None) -> date | None:
+        if value is not None and not date(1990, 1, 1) <= value <= date.today():
+            raise ValueError("Enter a realistic date of birth.")
+        return value
+
+
+class StudentOut(StudentIn):
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+class StudentPage(BaseModel):
+    items: list[StudentOut]
+    total: int
+    page: int
+    page_size: int
+    all_students: int
+
+
+class ImportProblem(BaseModel):
+    row: int
+    name: str | None = None
+    reason: Literal["missing_name", "bad_grade", "bad_date", "bad_phone", "bad_value"]
+
+
+class StudentImportResult(BaseModel):
+    rows: int
+    added: int
+    duplicates: int
+    problems: list[ImportProblem]
+    problem_count: int
+    preview: list[StudentIn]
+    saved: bool

@@ -85,7 +85,11 @@ Admins manage notices in the Notices tab of the admin panel (http://127.0.0.1:30
 
 `GET /api/notices` returns published notices only, newest first, with no management fields. `PATCH /api/admin/notices/{id}/pinned` pins or unpins one notice without changing its text or date. The protected `/api/admin/notices` endpoints use the same session cookie and origin check as the enquiry endpoints. The `notices` table is created by the initializer, so restart `python scripts/dev.py` once after this update.
 
-## Backend commands (manual startup)
+## Students
+
+The Students tab of the admin panel (http://127.0.0.1:3000/admin#students) keeps the school's student list. Admins add, edit, and remove students by hand; each student has a full name and grade (1–11), and optionally a class letter, date of birth, parent or guardian, and parent's phone. The list can be searched by student, parent, or phone and filtered by grade.
+
+
 
 From `backend/`, configure environment variables or copy `.env.example` to `.env`. Defaults match the native launcher. Run the initializer, then the API and worker in separate terminals:
 

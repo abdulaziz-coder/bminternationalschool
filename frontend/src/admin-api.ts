@@ -12,7 +12,14 @@ async function request(path: string, options?: RequestInit) {
   catch { throw new AdminError(503, 'The local admin service is unavailable. Please check that the backend is running.'); }
   if (!response.ok) {
     const noticeMessages: Record<number, string> = path.startsWith('/notices') ? { 404: 'This notice no longer exists.', 422: 'Please check the notice and try again.' } : {};
-    const messages: Record<number, string> = { ...noticeMessages, 401: path === '/login' ? 'Incorrect username or password.' : 'Please sign in again.', 429: 'Too many sign-in attempts. Try again in a minute.', 503: path === '/login' ? 'Admin account is not configured. Run the local database initializer.' : 'The local admin service is unavailable. Please check that the backend is running.' };
+    const studentMessages: Record<number, string> = path.startsWith('/students') ? { 404: 'This student no longer exists.', 422: 'Please check the student’s details and try again.', 413: 'The file is larger than 5 MB.' } : {};
+    if (path.startsWith('/students/import') && response.status === 400) {
+      // The import endpoint explains why a workbook was refused with a short code.
+      const reasons: Record<string, string> = { missing_columns: 'The file needs a column for the student’s name and a column for the grade.', too_many_rows: 'The file has more than 2,000 students. Please split it into smaller files.' };
+      const code = await response.json().then(body => String(body?.detail), () => '');
+      throw new AdminError(400, reasons[code] ?? 'This file could not be read. Please upload an Excel .xlsx file.');
+    }
+    const messages: Record<number, string> = { ...noticeMessages, ...studentMessages, 401: path === '/login' ? 'Incorrect username or password.' : 'Please sign in again.', 429: 'Too many sign-in attempts. Try again in a minute.', 503: path === '/login' ? 'Admin account is not configured. Run the local database initializer.' : 'The local admin service is unavailable. Please check that the backend is running.' };
     throw new AdminError(response.status, messages[response.status] ?? 'The local admin service is unavailable. Please check that the backend is running.');
   }
   return response.status === 204 ? null : response.json();
@@ -52,3 +59,32 @@ export async function pinNotice(id: string, pinned: boolean) {
 export async function deleteNotice(id: string) {
   await request(`/notices/${id}`, { method: 'DELETE' });
 }
+
+const student = z.object({ id: z.uuid(), full_name: z.string(), grade: z.number(), class_name: z.string().nullable(), birth_date: z.string().nullable(), parent_name: z.string().nullable(), parent_phone: z.string().nullable() });
+const studentPage = z.object({ items: z.array(student), total: z.number(), page: z.number(), page_size: z.number(), all_students: z.number() });
+const importReport = z.object({
+  rows: z.number(), added: z.number(), duplicates: z.number(), problem_count: z.number(), saved: z.boolean(),
+  problems: z.array(z.object({ row: z.number(), name: z.string().nullable(), reason: z.enum(['missing_name', 'bad_grade', 'bad_date', 'bad_phone', 'bad_value']) })),
+  preview: z.array(student.omit({ id: true })),
+});
+export type AdminStudent = z.infer<typeof student>;
+export type StudentDraft = { full_name: string; grade: number; class_name: string; birth_date: string | null; parent_name: string; parent_phone: string };
+export type ImportReport = z.infer<typeof importReport>;
+export async function adminStudents(filters: { q: string; grade: string; page: number }) {
+  const params = new URLSearchParams({ page: String(filters.page), page_size: '25' });
+  if (filters.q) params.set('q', filters.q);
+  if (filters.grade) params.set('grade', filters.grade);
+  return studentPage.parse(await request(`/students?${params}`));
+}
+/** Adds a student, or replaces the one with the given id. */
+export async function saveStudent(id: string | null, draft: StudentDraft) {
+  return student.parse(await request(id ? `/students/${id}` : '/students', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }));
+}
+export async function deleteStudent(id: string) {
+  await request(`/students/${id}`, { method: 'DELETE' });
+}
+/** Sends an Excel workbook. With `save` false the server only reports what the import would do. */
+export async function importStudents(file: File, save: boolean) {
+  return importReport.parse(await request(`/students/import?dry_run=${!save}`, { method: 'POST', headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }, body: file }));
+}
+export const studentTemplateUrl = '/api/admin/students/template';
