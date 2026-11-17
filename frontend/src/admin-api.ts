@@ -6,20 +6,26 @@ const pageSchema = z.object({ items: z.array(detail), total: z.number(), page: z
 export type AdminEnquiry = z.infer<typeof detail>;
 export class AdminError extends Error { constructor(public status: number, message: string) { super(message); } }
 
-async function request(path: string, options?: RequestInit) {
+async function request(path: string, options?: RequestInit, timeout = 10_000) {
   let response: Response;
-  try { response = await fetch(`/api/admin${path}`, { ...options, credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(10_000) }); }
+  try { response = await fetch(`/api/admin${path}`, { ...options, credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(timeout) }); }
   catch { throw new AdminError(503, 'The local admin service is unavailable. Please check that the backend is running.'); }
   if (!response.ok) {
     const noticeMessages: Record<number, string> = path.startsWith('/notices') ? { 404: 'This notice no longer exists.', 422: 'Please check the notice and try again.' } : {};
     const studentMessages: Record<number, string> = path.startsWith('/students') ? { 404: 'This student no longer exists.', 422: 'Please check the student’s details and try again.', 413: 'The file is larger than 5 MB.' } : {};
+    const teacherMessages: Record<number, string> = path.startsWith('/teachers') ? { 404: 'This teacher no longer exists.', 422: 'Please check the teacher’s details and try again.', 413: 'The file is larger than 5 MB.' } : {};
+    if (path.startsWith('/teachers/import') && response.status === 400) {
+      const reasons: Record<string, string> = { missing_columns: 'The file needs a column for the teacher’s name and a column for the subject.', too_many_rows: 'The file has more than 500 teachers. Please split it into smaller files.' };
+      const code = await response.json().then(body => String(body?.detail), () => '');
+      throw new AdminError(400, reasons[code] ?? 'This file could not be read. Please upload an Excel .xlsx file.');
+    }
     if (path.startsWith('/students/import') && response.status === 400) {
       // The import endpoint explains why a workbook was refused with a short code.
       const reasons: Record<string, string> = { missing_columns: 'The file needs a column for the student’s name and a column for the grade.', too_many_rows: 'The file has more than 2,000 students. Please split it into smaller files.' };
       const code = await response.json().then(body => String(body?.detail), () => '');
       throw new AdminError(400, reasons[code] ?? 'This file could not be read. Please upload an Excel .xlsx file.');
     }
-    const messages: Record<number, string> = { ...noticeMessages, ...studentMessages, 401: path === '/login' ? 'Incorrect username or password.' : 'Please sign in again.', 429: 'Too many sign-in attempts. Try again in a minute.', 503: path === '/login' ? 'Admin account is not configured. Run the local database initializer.' : 'The local admin service is unavailable. Please check that the backend is running.' };
+    const messages: Record<number, string> = { ...noticeMessages, ...studentMessages, ...teacherMessages, 401: path === '/login' ? 'Incorrect username or password.' : 'Please sign in again.', 429: 'Too many sign-in attempts. Try again in a minute.', 503: path === '/login' ? 'Admin account is not configured. Run the local database initializer.' : 'The local admin service is unavailable. Please check that the backend is running.' };
     throw new AdminError(response.status, messages[response.status] ?? 'The local admin service is unavailable. Please check that the backend is running.');
   }
   return response.status === 204 ? null : response.json();
@@ -88,3 +94,40 @@ export async function importStudents(file: File, save: boolean) {
   return importReport.parse(await request(`/students/import?dry_run=${!save}`, { method: 'POST', headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }, body: file }));
 }
 export const studentTemplateUrl = '/api/admin/students/template';
+
+const teacher = z.object({ id: z.uuid(), full_name: z.string(), subject: z.string(), phone: z.string().nullable(), login: z.string() });
+const teacherPage = z.object({ items: z.array(teacher), total: z.number(), page: z.number(), page_size: z.number() });
+const issued = z.object({ teacher, password: z.string() });
+const teacherImport = z.object({
+  rows: z.number(), added: z.number(), duplicates: z.number(), problem_count: z.number(), saved: z.boolean(),
+  problems: z.array(z.object({ row: z.number(), name: z.string().nullable(), reason: z.enum(['missing_name', 'missing_subject', 'bad_phone', 'bad_value']) })),
+  preview: z.array(z.object({ full_name: z.string(), subject: z.string() })),
+  credentials: z.array(z.object({ full_name: z.string(), subject: z.string(), login: z.string(), password: z.string() })),
+});
+export type AdminTeacher = z.infer<typeof teacher>;
+export type TeacherDraft = { full_name: string; subject: string; phone: string };
+export type TeacherImportReport = z.infer<typeof teacherImport>;
+export async function adminTeachers(filters: { q: string; page: number }) {
+  const params = new URLSearchParams({ page: String(filters.page), page_size: '25' });
+  if (filters.q) params.set('q', filters.q);
+  return teacherPage.parse(await request(`/teachers?${params}`));
+}
+/** Adds a teacher; the reply carries the generated password, which cannot be fetched again. */
+export async function createTeacher(draft: TeacherDraft) {
+  return issued.parse(await request('/teachers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }));
+}
+export async function updateTeacher(id: string, draft: TeacherDraft) {
+  return teacher.parse(await request(`/teachers/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }));
+}
+/** Replaces the teacher's password with a new generated one. */
+export async function resetTeacherPassword(id: string) {
+  return issued.parse(await request(`/teachers/${id}/password`, { method: 'POST' }));
+}
+export async function deleteTeacher(id: string) {
+  await request(`/teachers/${id}`, { method: 'DELETE' });
+}
+/** Sends an Excel workbook. Saving a large list takes a while because every password is hashed. */
+export async function importTeachers(file: File, save: boolean) {
+  return teacherImport.parse(await request(`/teachers/import?dry_run=${!save}`, { method: 'POST', headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }, body: file }, save ? 120_000 : 10_000));
+}
+export const teacherTemplateUrl = '/api/admin/teachers/template';

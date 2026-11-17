@@ -73,6 +73,20 @@ class StudentRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class TeacherRecord(Base):
+    __tablename__ = "teachers"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    full_name: Mapped[str] = mapped_column(String(120), index=True)
+    subject: Mapped[str] = mapped_column(String(80))
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Generated sign-in for the teacher pages. Only a salted scrypt hash of the password is kept.
+    login: Mapped[str] = mapped_column(String(40), unique=True)
+    password_salt: Mapped[str] = mapped_column(String(64))
+    password_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 async def get_session():
     async with Session() as session:
         yield session

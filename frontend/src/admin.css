@@ -111,3 +111,22 @@ html:has(.admin-page){overflow-x:clip}
 /* The upload limit, shown every time the import dialog is open. */
 .admin-limit-note{display:flex;align-items:flex-start;gap:11px;margin:0 0 16px;padding:13px 15px;border:1px solid #ecd5a4;border-radius:13px;background:#fff8ea;color:#6b4c14;font-size:12px;line-height:1.7}
 .admin-limit-note svg{flex:none;margin-top:1px}.admin-limit-note strong{display:block;font-size:12px;font-weight:700}
+
+/* Teachers: logins and one-time sign-in details. */
+.admin-login,.admin-credential code,.admin-credential-list code,.admin-form-note code,.admin-delete-target span{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.admin-login{padding:5px 9px;border-radius:8px;background:#eef3f9;color:#174265;font-size:11px;white-space:nowrap}
+.admin-form-note{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:0 0 4px;padding:12px 14px;border-radius:12px;background:#eef4fa;color:#44647e;font-size:12px;line-height:1.6}
+.admin-form-note svg{flex:none}.admin-form-note code{padding:3px 8px;border-radius:7px;background:#fff;color:#174265;font-size:11px}
+.admin-credential{padding:20px;border:1px solid #dce6f0;border-radius:16px;background:#f7fafd}
+.admin-credential>strong{display:block;font-size:16px;overflow-wrap:anywhere}.admin-credential>span{display:block;margin-top:4px;font-size:12px;color:#6b8499}
+.admin-dialog .admin-credential dl{margin:16px 0 0}.admin-dialog .admin-credential dl>div{grid-template-columns:90px 1fr;align-items:center;padding:10px 0}.admin-dialog .admin-credential dl>div:last-child{border-bottom:0;padding-bottom:0}
+.admin-credential dd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.admin-credential code{padding:7px 11px;border-radius:9px;background:#fff;border:1px solid #dce6f0;color:#174265;font-size:14px;letter-spacing:.03em;overflow-wrap:anywhere}
+.admin-credential-list ul{max-height:300px}.admin-credential-list li{align-items:center}
+.admin-credential-list li small{display:block;font-size:11px;color:#7a8fa2}
+.admin-import-list.admin-credential-list li span:last-child{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:none;color:#174265}
+.admin-credential-list code{padding:4px 8px;border-radius:7px;background:#eef3f9;font-size:11px}
+.admin-dialog .admin-confirm-actions{align-items:center}
+@media(max-width:700px){.admin-import-list.admin-credential-list li span:last-child{justify-content:flex-start}.admin-credential dd{flex-wrap:wrap}}
+/* Four sections in the narrow-screen tab bar: let it scroll sideways instead of squeezing. */
+@media(max-width:520px){.admin-tabs button{flex:1 0 auto}}

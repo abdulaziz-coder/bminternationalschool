@@ -6,14 +6,16 @@ import { LanguageSwitcher, useLanguage } from './i18n';
 import { AdminError, adminEnquiries, adminLogin, adminLogout, adminSession, markEnquiryReceived, deleteEnquiry, type AdminEnquiry } from './admin-api';
 import AdminNotices from './AdminNotices';
 import AdminStudents from './AdminStudents';
+import AdminTeachers from './AdminTeachers';
 import './admin.css';
 
-const tabs = ['enquiries', 'students', 'notices'] as const;
+const tabs = ['enquiries', 'students', 'teachers', 'notices'] as const;
 type Tab = typeof tabs[number];
-const tabNames = { enquiries: 'Enquiries', students: 'Students', notices: 'Notices' };
+const tabNames = { enquiries: 'Enquiries', students: 'Students', teachers: 'Teachers', notices: 'Notices' };
 const sectionIcons = {
   enquiries: <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round"><path d="M4 13.500 6.200 5.500h11.600L20 13.500V18a1.500 1.500 0 0 1-1.500 1.500h-13A1.500 1.500 0 0 1 4 18z" /><path d="M4 13.500h4.500l1 2h5l1-2H20" /></svg>,
   students: <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round"><circle cx="9" cy="8.500" r="3.200" /><path d="M3 19.500c.600-3.200 3-5 6-5s5.400 1.800 6 5M15.500 5.600a3.200 3.200 0 0 1 0 5.800M17.500 14.800c1.900.700 3.100 2.300 3.500 4.700" /></svg>,
+  teachers: <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round"><path d="M3 5.500h18v10H3zM8 19.500l4-4 4 4M7 9.500h6M7 12h4" /></svg>,
   notices: <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.700" strokeLinejoin="round" strokeLinecap="round"><path d="M4 10v4h3l6 4V6l-6 4z" /><path d="M16.500 9.500a3.500 3.500 0 0 1 0 5M18.800 7a7 7 0 0 1 0 10" /></svg>,
 };
 
@@ -46,7 +48,7 @@ export default function Admin() {
   useEffect(() => { if (confirmDelete) cancelDelete.current?.focus(); }, [confirmDelete]);
   useEffect(() => { if (list.data && page > Math.max(1, Math.ceil(list.data.total / list.data.page_size))) setPage(Math.max(1, Math.ceil(list.data.total / list.data.page_size))); }, [list.data, page]);
   useEffect(() => {
-    if (!session.data) { setSelected(null); client.removeQueries({ queryKey: ['admin', 'enquiries'] }); client.removeQueries({ queryKey: ['admin', 'notices'] }); client.removeQueries({ queryKey: ['admin', 'students'] }); }
+    if (!session.data) { setSelected(null); client.removeQueries({ queryKey: ['admin', 'enquiries'] }); client.removeQueries({ queryKey: ['admin', 'notices'] }); client.removeQueries({ queryKey: ['admin', 'students'] }); client.removeQueries({ queryKey: ['admin', 'teachers'] }); }
   }, [session.data, client]);
   useEffect(() => {
     if (list.error instanceof AdminError && list.error.status === 401) client.setQueryData(['admin', 'session'], null);
@@ -88,7 +90,7 @@ export default function Admin() {
       </motion.section> : <>
         {logout.isError && <p className="admin-error" role="alert">{errorMessage(logout.error)}</p>}
         <div className="admin-layout"><aside className="admin-sidebar"><p className="admin-eyebrow">{t('Admin sections')}</p><nav className="admin-tabs" aria-label={t('Admin sections')}>{tabs.map(value => <button key={value} type="button" aria-current={tab === value ? 'page' : undefined} onClick={() => selectTab(value)}>{sectionIcons[value]}<span>{t(tabNames[value])}</span>{value === 'enquiries' && list.data && <b>{list.data.stats.total}</b>}</button>)}</nav></aside><div className="admin-content">
-        {tab === 'notices' ? <AdminNotices onSignedOut={() => client.setQueryData(['admin', 'session'], null)} /> : tab === 'students' ? <AdminStudents onSignedOut={() => client.setQueryData(['admin', 'session'], null)} /> : <>
+        {tab === 'notices' ? <AdminNotices onSignedOut={() => client.setQueryData(['admin', 'session'], null)} /> : tab === 'students' ? <AdminStudents onSignedOut={() => client.setQueryData(['admin', 'session'], null)} /> : tab === 'teachers' ? <AdminTeachers onSignedOut={() => client.setQueryData(['admin', 'session'], null)} /> : <>
         <div className="admin-title"><div><p className="admin-eyebrow">{t('Admissions admin')}</p><h1>{t('Admissions enquiries')}</h1><p>{t('Review enquiries from families, all in one place.')}</p></div><a className="admin-secondary" href="/">{t('Back to website')} ↗</a></div>
         {deletedReference && <p className="admin-success" role="status">{t('Enquiry deleted.')} <strong>{deletedReference}</strong></p>}
         <div className="admin-stats">{([['All enquiries', list.data?.stats.total], ['Received', list.data?.stats.received], ['Ready for review', list.data?.stats.ready_for_review]] as const).map(([label, count], index) => <div key={label} className={index === 0 ? 'admin-stat featured' : 'admin-stat'}><span>{t(label)}</span><strong>{count ?? '—'}</strong><i aria-hidden="true">{['↗', '↓', '✓'][index]}</i></div>)}</div>

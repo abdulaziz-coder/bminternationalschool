@@ -89,7 +89,19 @@ Admins manage notices in the Notices tab of the admin panel (http://127.0.0.1:30
 
 The Students tab of the admin panel (http://127.0.0.1:3000/admin#students) keeps the school's student list. Admins add, edit, and remove students by hand; each student has a full name and grade (1–11), and optionally a class letter, date of birth, parent or guardian, and parent's phone. The list can be searched by student, parent, or phone and filtered by grade.
 
+“Import from Excel” reads an `.xlsx` workbook (first sheet, up to 5 MB and 2,000 students); the dialog always shows this limit and refuses an oversized or non-`.xlsx` file before uploading it. The file is read first and a preview shows how many students will be added, how many are already in the list, and which rows have problems and why; nothing is saved until the admin confirms. The header row is found automatically, including below a title, and is recognised in English, Uzbek, and Russian. A column for the name and a column for the grade are required; a grade such as `5-A` also sets the class letter, and a name split across surname and first-name columns is joined. Students already in the list (same name, grade, and class) and repeats inside the file are skipped, so importing the same file twice adds nobody. A template can be downloaded from the import dialog. Older `.xls` files must be saved as `.xlsx` first.
 
+Student records are personal data about children: they are only available through the protected `/api/admin/students` endpoints and are never shown on the public website. Excel reading uses `openpyxl`; after updating, run `backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.lock` and restart `python scripts/dev.py` so the `students` table is created.
+
+## Teachers
+
+The Teachers tab of the admin panel (http://127.0.0.1:3000/admin#teachers) keeps the staff list. Admins add, edit, and remove teachers by hand or import them from an `.xlsx` workbook, the same way as students (preview before saving, headers in English, Uzbek, or Russian, duplicates skipped, a downloadable template). A teacher has a full name, the subject they teach, and an optional phone number; an import file needs a name column and a subject column and may hold up to 500 teachers.
+
+Every teacher gets a generated sign-in for the future teacher pages. The login is built from the name in Latin letters (`karimova.zarina`, with a number added if it is taken) and does not change when the teacher is edited. The password is ten random characters without look-alikes such as `0` and `O`. It keeps working until an admin presses “Generate password” for that teacher, which replaces it.
+
+Passwords are stored only as salted scrypt hashes, like the admin password, so they cannot be read back from the database or shown again later. They are displayed once, when generated: after adding a teacher, after generating a new password, and for the whole list after an import, where they can be copied or downloaded as a CSV file. A teacher sign-in endpoint is not part of this version; the stored login and hash are ready for it.
+
+## Backend commands (manual startup)
 
 From `backend/`, configure environment variables or copy `.env.example` to `.env`. Defaults match the native launcher. Run the initializer, then the API and worker in separate terminals:
 

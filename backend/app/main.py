@@ -14,6 +14,7 @@ from .db import EnquiryRecord, engine, get_session
 from .schemas import EnquiryIn, Receipt
 from .admin import router as admin_router
 from .students import router as students_router
+from .teachers import router as teachers_router
 from .notices import admin_router as admin_notices_router, public_router as notices_router
 
 
@@ -28,6 +29,7 @@ app.include_router(admin_router)
 app.include_router(admin_notices_router)
 app.include_router(notices_router)
 app.include_router(students_router)
+app.include_router(teachers_router)
 Db = Annotated[AsyncSession, Depends(get_session)]
 
 

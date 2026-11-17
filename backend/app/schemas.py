@@ -149,3 +149,61 @@ class StudentImportResult(BaseModel):
     problem_count: int
     preview: list[StudentIn]
     saved: bool
+
+
+class TeacherIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    full_name: str = Field(min_length=2, max_length=120)
+    subject: str = Field(min_length=2, max_length=80)
+    phone: str | None = Field(default=None, max_length=32)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, value: str | None) -> str | None:
+        return normalise_phone(value) if value else None
+
+
+class TeacherOut(TeacherIn):
+    """A teacher as admins see them: the login is included, the password hash never is."""
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+    id: UUID
+    login: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class TeacherCredentials(BaseModel):
+    """Returned once, when a password is generated."""
+    teacher: TeacherOut
+    password: str
+
+
+class TeacherPage(BaseModel):
+    items: list[TeacherOut]
+    total: int
+    page: int
+    page_size: int
+
+
+class TeacherImportProblem(BaseModel):
+    row: int
+    name: str | None = None
+    reason: Literal["missing_name", "missing_subject", "bad_phone", "bad_value"]
+
+
+class ImportedCredentials(BaseModel):
+    full_name: str
+    subject: str
+    login: str
+    password: str
+
+
+class TeacherImportResult(BaseModel):
+    rows: int
+    added: int
+    duplicates: int
+    problems: list[TeacherImportProblem]
+    problem_count: int
+    preview: list[TeacherIn]
+    saved: bool
+    credentials: list[ImportedCredentials]

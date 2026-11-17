@@ -45,14 +45,14 @@ def normalise(text) -> str:
     return " ".join(str(text or "").replace("‘", "'").replace("’", "'").replace("`", "'").replace("ʻ", "'").lower().split())
 
 
-def map_columns(header: tuple) -> dict[str, list[int]]:
-    """Matches header cells to student fields; each column is used for at most one field.
+def map_columns(header: tuple, keywords_by_field: dict[str, tuple] | None = None) -> dict[str, list[int]]:
+    """Matches header cells to fields (student fields by default); each column is used for at most one field.
 
     The name may be split over several columns (surname, first name, patronymic); all of them are kept, in sheet order.
     """
     columns: dict[str, list[int]] = {}
     used: set[int] = set()
-    for field, keywords in COLUMN_KEYWORDS.items():
+    for field, keywords in (keywords_by_field or COLUMN_KEYWORDS).items():
         for index, cell in enumerate(header):
             label = normalise(cell)
             if label and index not in used and any(keyword in label for keyword in keywords):
@@ -103,24 +103,29 @@ def student_key(full_name: str, grade: int, class_name: str | None) -> tuple:
     return normalise(full_name), grade, normalise(class_name)
 
 
-def read_workbook(content: bytes) -> tuple[list[tuple[int, StudentIn]], list[ImportProblem], int]:
-    """Returns the valid students (with their sheet row numbers), the rows with problems, and the number of data rows."""
+def open_sheet(content: bytes, keywords: dict[str, tuple], required: tuple[str, ...]):
+    """Opens the first sheet of an .xlsx workbook and finds its header row.
+
+    Returns the remaining rows (an iterator positioned after the header), the column map, and the header's row number.
+    """
     try:
         sheet = load_workbook(BytesIO(content), read_only=True, data_only=True).worksheets[0]
     except (BadZipFile, InvalidFileException, KeyError, IndexError, OSError, ValueError):
         raise HTTPException(400, "not_excel")
     rows = sheet.iter_rows(values_only=True)
-    header_number, columns = 0, {}
     # The header may sit below a title; look for it in the first rows.
     for number, row in enumerate(rows, start=1):
-        columns = map_columns(row)
-        if "full_name" in columns and "grade" in columns:
-            header_number = number
-            break
+        columns = map_columns(row, keywords)
+        if all(field in columns for field in required):
+            return rows, columns, number
         if number >= 15:
             break
-    if not header_number:
-        raise HTTPException(400, "missing_columns")
+    raise HTTPException(400, "missing_columns")
+
+
+def read_workbook(content: bytes) -> tuple[list[tuple[int, StudentIn]], list[ImportProblem], int]:
+    """Returns the valid students (with their sheet row numbers), the rows with problems, and the number of data rows."""
+    rows, columns, header_number = open_sheet(content, COLUMN_KEYWORDS, ("full_name", "grade"))
 
     students: list[tuple[int, StudentIn]] = []
     problems: list[ImportProblem] = []
