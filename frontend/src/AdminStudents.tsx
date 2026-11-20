@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from './i18n';
-import { AdminError, adminStudents, deleteStudent, importStudents, saveStudent, studentTemplateUrl, type AdminStudent, type ImportReport, type StudentDraft } from './admin-api';
+import { AdminError, adminStudents, createStudent, deleteStudent, generateStudentPassKey, importStudents, studentTemplateUrl, updateStudent, type AdminStudent, type ImportReport, type IssuedPassKey, type StudentDraft } from './admin-api';
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const blank: StudentDraft = { full_name: '', grade: 0, class_name: '', birth_date: null, parent_name: '', parent_phone: '' };
@@ -19,7 +19,11 @@ export default function AdminStudents({ onSignedOut }: { onSignedOut: () => void
   // Only one of these is set at a time; together they decide what the dialog shows.
   const [editing, setEditing] = useState<AdminStudent | 'new' | null>(null);
   const [deleting, setDeleting] = useState<AdminStudent | null>(null);
+  const [resetting, setResetting] = useState<AdminStudent | null>(null);
   const [importing, setImporting] = useState(false);
+  // Pass keys that were just generated, shown so they can be copied or downloaded straight away.
+  const [issued, setIssued] = useState<IssuedPassKey[] | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   const [draft, setDraft] = useState<StudentDraft>(blank);
   const [errors, setErrors] = useState<Errors>({});
   const [saved, setSaved] = useState<string | null>(null);
@@ -34,9 +38,18 @@ export default function AdminStudents({ onSignedOut }: { onSignedOut: () => void
   const list = useQuery({ queryKey: ['admin', 'students', q, grade, page], queryFn: () => adminStudents({ q, grade, page }), retry: false, staleTime: 0 });
   const signOutIfExpired = (error: Error | null) => { if (error instanceof AdminError && error.status === 401) onSignedOut(); };
   const refresh = () => client.invalidateQueries({ queryKey: ['admin', 'students'] });
-  const save = useMutation({
-    mutationFn: () => saveStudent(editing === 'new' || editing === null ? null : editing.id, { ...draft, full_name: draft.full_name.trim(), class_name: draft.class_name.trim(), parent_name: draft.parent_name.trim(), parent_phone: draft.parent_phone.trim() }),
+  const tidy = () => ({ ...draft, full_name: draft.full_name.trim(), class_name: draft.class_name.trim(), parent_name: draft.parent_name.trim(), parent_phone: draft.parent_phone.trim() });
+  const create = useMutation({
+    mutationFn: () => createStudent(tidy()),
+    onSuccess: student => { setEditing(null); setIssued([student]); refresh(); }, onError: signOutIfExpired, retry: false,
+  });
+  const update = useMutation({
+    mutationFn: (item: AdminStudent) => updateStudent(item.id, tidy()),
     onSuccess: () => { setEditing(null); setSaved(t('Student saved.')); refresh(); }, onError: signOutIfExpired, retry: false,
+  });
+  const reset = useMutation({
+    mutationFn: (item: AdminStudent) => generateStudentPassKey(item.id),
+    onSuccess: student => { setResetting(null); setIssued([student]); refresh(); }, onError: signOutIfExpired, retry: false,
   });
   const remove = useMutation({
     mutationFn: (item: AdminStudent) => deleteStudent(item.id),
@@ -46,29 +59,42 @@ export default function AdminStudents({ onSignedOut }: { onSignedOut: () => void
   const preview = useMutation({ mutationFn: (chosen: File) => importStudents(chosen, false), onError: signOutIfExpired, retry: false });
   const commit = useMutation({
     mutationFn: (chosen: File) => importStudents(chosen, true),
-    onSuccess: report => { closeImport(); setSaved(`${report.added} ${t('students added.')}`); setPage(1); refresh(); }, onError: signOutIfExpired, retry: false,
+    onSuccess: report => { closeImport(); if (report.pass_keys.length) setIssued(report.pass_keys); setSaved(`${report.added} ${t('students added.')}`); setPage(1); refresh(); }, onError: signOutIfExpired, retry: false,
   });
-  const busy = save.isPending || remove.isPending || commit.isPending;
-  const open = editing !== null || deleting !== null || importing;
+  const saving = create.isPending || update.isPending;
+  const busy = saving || remove.isPending || reset.isPending || commit.isPending;
+  const open = editing !== null || deleting !== null || resetting !== null || importing || issued !== null;
   useEffect(() => { const timer = setTimeout(() => { setQ(search.trim()); setPage(1); }, 300); return () => clearTimeout(timer); }, [search]);
   useEffect(() => {
     // A modal dialog focuses its first control (the close button); start in the name field instead.
     if (open && !dialog.current?.open) { dialog.current?.showModal(); nameInput.current?.focus(); }
     if (!open && dialog.current?.open) dialog.current.close();
   }, [open]);
-  useEffect(() => { if (deleting) cancelDelete.current?.focus(); }, [deleting]);
+  useEffect(() => { if (deleting || resetting || issued) cancelDelete.current?.focus(); }, [deleting, resetting, issued]);
+  useEffect(() => { if (!copied) return; const timer = setTimeout(() => setCopied(null), 1800); return () => clearTimeout(timer); }, [copied]);
   useEffect(() => { signOutIfExpired(list.error); }, [list.error]);
   useEffect(() => { if (list.data && page > Math.max(1, Math.ceil(list.data.total / list.data.page_size))) setPage(Math.max(1, Math.ceil(list.data.total / list.data.page_size))); }, [list.data, page]);
 
   function compose(item: AdminStudent | 'new') {
-    save.reset(); setErrors({}); setSaved(null);
+    create.reset(); update.reset(); setErrors({}); setSaved(null);
     setDraft(item === 'new' ? blank : { full_name: item.full_name, grade: item.grade, class_name: item.class_name ?? '', birth_date: item.birth_date, parent_name: item.parent_name ?? '', parent_phone: item.parent_phone ?? '' });
     setEditing(item);
   }
   function confirmDelete(item: AdminStudent) { remove.reset(); setSaved(null); setDeleting(item); }
   function openImport() { preview.reset(); commit.reset(); setFile(null); setFileProblem(null); setSaved(null); setImporting(true); }
   function closeImport() { setImporting(false); setFile(null); setDragging(false); }
-  function close() { if (!busy) { setEditing(null); setDeleting(null); closeImport(); } }
+  function close() { if (!busy) { setEditing(null); setDeleting(null); setResetting(null); setIssued(null); closeImport(); } }
+  async function copy(text: string, label: string) {
+    try { await navigator.clipboard.writeText(text); setCopied(label); } catch { /* The text stays on screen to copy by hand. */ }
+  }
+  function download(items: IssuedPassKey[]) {
+    const quote = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const rows = [[t('Full name'), t('Class'), t('Pass key')], ...items.map(item => [item.full_name, className(item), item.pass_key])];
+    // The byte-order mark makes Excel read the names as UTF-8.
+    const url = URL.createObjectURL(new Blob(['﻿' + rows.map(row => row.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a'); link.href = url; link.download = 'students-pass-keys.csv'; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
   function chooseFile(chosen: File | undefined) {
     if (!chosen) return;
     commit.reset(); preview.reset(); setFile(chosen);
@@ -87,7 +113,8 @@ export default function AdminStudents({ onSignedOut }: { onSignedOut: () => void
     const digits = draft.parent_phone.replace(/\D/g, '');
     if (draft.parent_phone.trim() && (!/^\+?[0-9 ().-]+$/.test(draft.parent_phone.trim()) || digits.length < 7 || digits.length > 15)) problems.parent_phone = 'Please enter a valid phone number with 7 to 15 digits.';
     setErrors(problems);
-    if (!Object.values(problems).some(Boolean)) save.mutate();
+    if (Object.values(problems).some(Boolean)) return;
+    if (editing === 'new') create.mutate(); else if (editing) update.mutate(editing);
   }
   function set<Key extends keyof StudentDraft>(key: Key, value: StudentDraft[Key]) { setDraft({ ...draft, [key]: value }); setErrors({ ...errors, [key]: undefined }); }
   function clear() { setSearch(''); setQ(''); setGrade(''); setPage(1); }
@@ -98,25 +125,40 @@ export default function AdminStudents({ onSignedOut }: { onSignedOut: () => void
   const report: ImportReport | undefined = preview.data;
   const pages = Math.max(1, Math.ceil((list.data?.total ?? 0) / 25));
   const filtered = !!(q || grade);
-
+  const saveError = create.error ?? update.error;
+  const confirming = deleting ?? resetting;
   return <>
     <div className="admin-title"><div><p className="admin-eyebrow">{t('Admissions admin')}</p><h1>{t('Students')}</h1><p>{t('Keep the student list up to date: add students one by one or import an Excel file.')}</p></div><div className="admin-title-actions"><button type="button" className="admin-secondary" onClick={openImport}><ExcelIcon />{t('Import from Excel')}</button><button type="button" className="admin-primary" onClick={() => compose('new')}>{t('Add student')} +</button></div></div>
-    {saved && <p className="admin-success" role="status">{saved}</p>}
-    <section className="admin-inbox" aria-label={t('Students')}>
-      <div className="admin-toolbar"><label className="admin-search" htmlFor="student-search"><span className="sr-only">{t('Search students')}</span><span aria-hidden="true">⌕</span><input id="student-search" type="search" placeholder={t('Search by student, parent, or phone')} value={search} maxLength={200} onChange={event => setSearch(event.target.value)} /></label>
+    {saved && <p className="admin-success" role="status">{saved}</p>}    <section className="admin-inbox" aria-label={t('Students')}>
+      <div className="admin-toolbar"><label className="admin-search" htmlFor="student-search"><span className="sr-only">{t('Search students')}</span><span aria-hidden="true">⌕</span><input id="student-search" type="search" placeholder={t('Search by student, parent, phone, or pass key')} value={search} maxLength={200} onChange={event => setSearch(event.target.value)} /></label>
         <label className="admin-filter"><span className="sr-only">{t('Grade')}</span><select aria-label={t('Grade')} value={grade} onChange={event => { setGrade(event.target.value); setPage(1); }}><option value="">{t('All grades')}</option>{Array.from({ length: 11 }, (_, index) => index + 1).map(value => <option key={value} value={value}>{gradeName(value)}</option>)}</select></label>
       </div>
-      {list.isPending ? <div className="admin-empty" role="status">{t('Loading…')}</div> : list.isError ? <div className="admin-empty admin-error" role="alert"><p>{errorMessage(list.error)}</p><button className="admin-secondary" onClick={() => list.refetch()}>{t('Try again')}</button></div> : list.data.items.length ? <div className="admin-table-scroll"><table><thead><tr><th scope="col">{t('Student')}</th><th scope="col">{t('Class')}</th><th scope="col">{t('Parent or guardian')}</th><th scope="col"><span className="sr-only">{t('Edit')}</span></th></tr></thead><tbody>{list.data.items.map(item => <tr key={item.id}>
+      {list.isPending ? <div className="admin-empty" role="status">{t('Loading…')}</div> : list.isError ? <div className="admin-empty admin-error" role="alert"><p>{errorMessage(list.error)}</p><button className="admin-secondary" onClick={() => list.refetch()}>{t('Try again')}</button></div> : list.data.items.length ? <div className="admin-table-scroll"><table><thead><tr><th scope="col">{t('Student')}</th><th scope="col">{t('Class')}</th><th scope="col">{t('Parent or guardian')}</th><th scope="col">{t('Pass key')}</th><th scope="col"><span className="sr-only">{t('Edit')}</span></th></tr></thead><tbody>{list.data.items.map(item => <tr key={item.id}>
         <td><div className="admin-person"><span className="admin-avatar" aria-hidden="true">{item.full_name.trim().charAt(0).toUpperCase()}</span><span><strong>{item.full_name}</strong><span className="admin-email">{birthDate(item.birth_date) ?? '—'}</span></span></div></td>
         <td><span className="admin-class">{className(item)}</span></td>
         <td>{item.parent_name || item.parent_phone ? <>{item.parent_name && <span className="admin-parent">{item.parent_name}</span>}{item.parent_phone && <span className="admin-email">{item.parent_phone}</span>}</> : <span className="admin-email">{t('Not recorded')}</span>}</td>
-        <td className="admin-row-actions"><button className="admin-view" onClick={() => compose(item)} aria-label={`${t('Edit')}: ${item.full_name}`}>{t('Edit')} ↗</button><button className="admin-delete-link" onClick={() => confirmDelete(item)} aria-label={`${t('Remove')}: ${item.full_name}`}>{t('Remove')}</button></td>
+        <td><span className="admin-pass-key"><code className="admin-code">{item.pass_key}</code><button type="button" className="admin-copy" onClick={() => copy(item.pass_key, item.id)} aria-label={`${t('Copy')}: ${t('Pass key')}, ${item.full_name}`} title={t(copied === item.id ? 'Copied' : 'Copy')}>{copied === item.id ? <CheckIcon /> : <CopyIcon />}</button></span></td>
+        <td className="admin-row-actions"><button className="admin-view" onClick={() => compose(item)} aria-label={`${t('Edit')}: ${item.full_name}`}>{t('Edit')} ↗</button><button className="admin-view" onClick={() => { reset.reset(); setSaved(null); setResetting(item); }} aria-label={`${t('Generate pass key')}: ${item.full_name}`}>{t('Generate pass key')}</button><button className="admin-delete-link" onClick={() => confirmDelete(item)} aria-label={`${t('Remove')}: ${item.full_name}`}>{t('Remove')}</button></td>
       </tr>)}</tbody></table></div> : <div className="admin-empty"><span aria-hidden="true">{filtered ? '↙' : '✎'}</span><h2>{t(filtered ? 'No matching students.' : 'No students yet.')}</h2><p>{t(filtered ? 'Try another search or clear your filters.' : 'Add students one by one or import your Excel list.')}</p>{filtered ? <button className="admin-secondary" onClick={clear}>{t('Clear filters')}</button> : <div className="admin-empty-actions"><button type="button" className="admin-secondary" onClick={openImport}><ExcelIcon />{t('Import from Excel')}</button><button type="button" className="admin-primary" onClick={() => compose('new')}>{t('Add student')} +</button></div>}</div>}
       <div className="admin-pagination"><span>{list.data?.total ?? 0} {t('results')} · {t('Page')} {page} {t('of')} {pages}</span><div><button className="admin-secondary" disabled={page === 1 || list.isFetching} onClick={() => setPage(page - 1)}>← {t('Previous')}</button><button className="admin-secondary" disabled={page >= pages || list.isFetching} onClick={() => setPage(page + 1)}>{t('Next')} →</button></div></div>
     </section>
     {/* Typed text and a chosen file are only discarded by an explicit Cancel or Close, never by a backdrop click. */}
-    <dialog ref={dialog} className={deleting ? 'admin-dialog' : 'admin-dialog admin-dialog-wide'} aria-labelledby="student-dialog-title" onCancel={event => { event.preventDefault(); close(); }} onClick={event => { if (deleting && event.target === event.currentTarget) close(); }}>
-      {deleting ? <div className="admin-dialog-content">
+    <dialog ref={dialog} className={confirming ? 'admin-dialog' : 'admin-dialog admin-dialog-wide'} aria-labelledby="student-dialog-title" onCancel={event => { event.preventDefault(); close(); }} onClick={event => { if (confirming && event.target === event.currentTarget) close(); }}>
+      {issued ? <div className="admin-dialog-content">
+        <p className="admin-eyebrow">{t('Students')}</p><h2 id="student-dialog-title">{t(issued.length === 1 ? 'Pass key' : 'Pass keys')}</h2>
+        <p className="admin-limit-note" role="note"><KeyIcon /><span><strong>{t('Give each family their pass key.')}</strong>{t('A parent uses the pass key to sign up. It keeps working until you generate a new one, and you can always find it in the student list.')}</span></p>
+        {issued.length === 1 ? <div className="admin-credential">
+          <strong>{issued[0].full_name}</strong><span>{className(issued[0])}</span>
+          <dl><div><dt>{t('Pass key')}</dt><dd><code>{issued[0].pass_key}</code><button type="button" className="admin-view" onClick={() => copy(issued[0].pass_key, 'key')}>{t(copied === 'key' ? 'Copied' : 'Copy')}</button></dd></div></dl>
+        </div> : <div className="admin-import-list admin-credential-list"><ul>{issued.map(item => <li key={item.pass_key}><span>{item.full_name}<small>{className(item)}</small></span><span><code>{item.pass_key}</code></span></li>)}</ul></div>}
+        <div className="admin-confirm-actions">{issued.length > 1 && <button className="admin-secondary" type="button" onClick={() => copy(issued.map(item => `${item.full_name} (${className(item)}) — ${item.pass_key}`).join('\n'), 'all')}>{t(copied === 'all' ? 'Copied' : 'Copy all')}</button>}<button className="admin-secondary" type="button" onClick={() => download(issued)}>↓ {t('Download the list')}</button><button ref={cancelDelete} className="admin-primary" type="button" onClick={() => setIssued(null)}>{t('Done')}</button></div>
+      </div> : resetting ? <div className="admin-dialog-content">
+        <p className="admin-eyebrow">{t('Generate pass key')}</p><h2 id="student-dialog-title">{t('Generate a new pass key?')}</h2>
+        <div className="admin-delete-target"><strong>{resetting.full_name}</strong><span>{resetting.pass_key}</span></div>
+        <p className="admin-delete-warning">{t('The student’s current pass key stops working and is replaced by a new one. The new pass key then works until you generate another.')}</p>
+        {reset.isError && <p className="admin-error" role="alert">{errorMessage(reset.error)}</p>}
+        <div className="admin-confirm-actions"><button ref={cancelDelete} className="admin-secondary" type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button className="admin-primary" type="button" disabled={busy} onClick={() => reset.mutate(resetting)}>{t(reset.isPending ? 'Creating…' : 'Generate pass key')}</button></div>
+      </div> : deleting ? <div className="admin-dialog-content">
         <p className="admin-eyebrow">{t('Remove student')}</p><h2 id="student-dialog-title">{t('Remove this student?')}</h2>
         <div className="admin-delete-target"><strong>{deleting.full_name}</strong><span>{className(deleting)}</span></div>
         <p className="admin-delete-warning">{t('This permanently removes the student and their parent’s contact details from the local database. This cannot be undone.')}</p>
@@ -129,7 +171,7 @@ export default function AdminStudents({ onSignedOut }: { onSignedOut: () => void
         <input ref={fileInput} className="sr-only" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" tabIndex={-1} aria-hidden="true" onChange={event => { chooseFile(event.target.files?.[0]); event.target.value = ''; }} />
         {!file ? <>
           <button type="button" className={dragging ? 'admin-dropzone dragging' : 'admin-dropzone'} onClick={() => fileInput.current?.click()} onDragOver={event => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}><ExcelIcon size={30} /><strong>{t('Choose an Excel file')}</strong><span>{t('or drag it here')}</span></button>
-          <p className="admin-import-hint">{t('The file needs a column for the name and a column for the grade. Date of birth, parent, and phone are optional.')} {t('The first sheet is read.')}</p>
+          <p className="admin-import-hint">{t('The file needs a column for the name and a column for the grade. Date of birth, parent, and phone are optional.')} {t('A pass key is generated for every new student.')} {t('The first sheet is read.')}</p>
           <a className="admin-template-link" href={studentTemplateUrl} download>↓ {t('Download a template')}</a>
         </> : <>
           <div className="admin-file"><ExcelIcon /><span>{file.name}</span><button type="button" className="admin-view" disabled={busy || preview.isPending} onClick={() => fileInput.current?.click()}>{t('Choose another file')}</button></div>
@@ -154,13 +196,23 @@ export default function AdminStudents({ onSignedOut }: { onSignedOut: () => void
           <label htmlFor="student-parent">{t('Parent or guardian')} <small>({t('Optional')})</small><input id="student-parent" value={draft.parent_name} maxLength={120} autoComplete="off" onChange={event => set('parent_name', event.target.value)} /></label>
           <label htmlFor="student-phone">{t('Parent’s phone')} <small>({t('Optional')})</small><input id="student-phone" type="tel" inputMode="tel" value={draft.parent_phone} maxLength={32} placeholder="+998 90 123 45 67" autoComplete="off" onChange={event => set('parent_phone', event.target.value)} aria-invalid={!!errors.parent_phone} aria-describedby={errors.parent_phone ? 'student-phone-error' : undefined} />{errors.parent_phone && <span id="student-phone-error" className="admin-field-error">{t(errors.parent_phone)}</span>}</label>
         </div>
-        {save.isError && <p className="admin-error" role="alert">{errorMessage(save.error)}</p>}
-        <div className="admin-confirm-actions"><button className="admin-secondary" type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button className="admin-primary" type="submit" disabled={busy}>{t(save.isPending ? 'Saving…' : 'Save student')}</button></div>
+        {editing === 'new' && <p className="admin-form-note"><KeyIcon />{t('A pass key for parent sign-up is generated automatically when you save.')}</p>}
+        {saveError && <p className="admin-error" role="alert">{errorMessage(saveError)}</p>}
+        <div className="admin-confirm-actions"><button className="admin-secondary" type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button className="admin-primary" type="submit" disabled={busy}>{t(saving ? 'Saving…' : 'Save student')}</button></div>
       </form>}
     </dialog>
   </>;
 }
 
+function CopyIcon() {
+  return <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></svg>;
+}
+function CheckIcon() {
+  return <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round"><path d="m5 12.500 4.500 4.500L19 7.500" /></svg>;
+}
+function KeyIcon() {
+  return <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round"><circle cx="8" cy="15" r="4" /><path d="m11 12 8.500-8.500M16 6.500l2.500 2.500M13.500 9l2 2" /></svg>;
+}
 function ExcelIcon({ size = 15 }: { size?: number }) {
   return <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9.500 12.500l5 5M14.500 12.500l-5 5" /></svg>;
 }

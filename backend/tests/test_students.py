@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from io import BytesIO
+import re
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -8,12 +9,48 @@ import pytest
 
 from app.main import app
 from app.runtime import loop_factory
+from app.pass_keys import new_pass_key, normalise_pass_key
 from app.students import map_columns, parse_date, parse_grade, read_workbook
 from test_admin import ORIGIN, local_account, login  # noqa: F401 - local_account is an autouse fixture
 from test_api import database_client  # noqa: F401
 
 STUDENT = {"full_name": "Aliyev Vali", "grade": 5, "class_name": "A", "birth_date": "2015-09-01", "parent_name": "Aliyev Sardor", "parent_phone": "+998 90 123 45 67"}
 XLSX_HEADERS = {**ORIGIN, "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+KEY_PATTERN = re.compile(r"[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}")
+
+
+def test_pass_keys_are_readable_and_match_however_they_are_typed():
+    keys = {new_pass_key() for _ in range(200)}
+    assert len(keys) == 200 and all(KEY_PATTERN.fullmatch(key) for key in keys)
+    key = keys.pop()
+    assert normalise_pass_key(key) == normalise_pass_key(key.lower().replace("-", " ")) == normalise_pass_key(f"  {key.replace('-', '')} ") == key
+    # Too short, too long, or with a character that is never used in keys.
+    assert normalise_pass_key(key[:-1]) is None and normalise_pass_key(key + "A") is None and normalise_pass_key("O" + key[1:]) is None and normalise_pass_key("") is None
+
+
+def test_every_student_has_a_pass_key_that_admins_can_read_and_replace(database_client):
+    client = database_client
+    login(client)
+    student = client.post("/api/admin/students", json=STUDENT, headers=ORIGIN).json()
+    key = student["pass_key"]
+    assert KEY_PATTERN.fullmatch(key)
+    other = client.post("/api/admin/students", json={**STUDENT, "full_name": "Karimova Zarina"}, headers=ORIGIN).json()
+    assert other["pass_key"] != key
+    # Admins always see the key in the list, and can find a student by it however it is typed.
+    assert {item["pass_key"] for item in client.get("/api/admin/students").json()["items"]} == {key, other["pass_key"]}
+    found = client.get("/api/admin/students", params={"q": key.lower().replace("-", "")}).json()
+    assert [item["id"] for item in found["items"]] == [student["id"]]
+    # Editing a student keeps their key.
+    assert client.put(f"/api/admin/students/{student['id']}", json={**STUDENT, "grade": 6}, headers=ORIGIN).json()["pass_key"] == key
+
+    assert client.post(f"/api/admin/students/{student['id']}/pass-key", headers={"Origin": "https://unrelated.example"}).status_code == 403
+    assert client.post(f"/api/admin/students/{uuid4()}/pass-key", headers=ORIGIN).status_code == 404
+    replaced = client.post(f"/api/admin/students/{student['id']}/pass-key", headers=ORIGIN)
+    assert replaced.status_code == 200 and replaced.headers["cache-control"] == "no-store"
+    assert KEY_PATTERN.fullmatch(replaced.json()["pass_key"]) and replaced.json()["pass_key"] != key
+    # The old key no longer finds anyone; the other student's key is untouched.
+    assert client.get("/api/admin/students", params={"q": key}).json()["total"] == 0
+    assert client.get("/api/admin/students", params={"q": other["pass_key"]}).json()["total"] == 1
 
 
 def workbook(*rows) -> bytes:
@@ -138,6 +175,9 @@ def test_excel_import_previews_then_saves_and_skips_duplicates(database_client):
 
     saved = client.post("/api/admin/students/import", params={"dry_run": "false"}, content=content, headers=XLSX_HEADERS).json()
     assert (saved["added"], saved["saved"]) == (2, True)
+    # Each imported student gets their own pass key; a preview issues none.
+    assert report["pass_keys"] == [] and [key["full_name"] for key in saved["pass_keys"]] == ["Karimova Zarina", "Usmonov Bek"]
+    assert len({key["pass_key"] for key in saved["pass_keys"]}) == 2 and all(KEY_PATTERN.fullmatch(key["pass_key"]) for key in saved["pass_keys"])
     listed = client.get("/api/admin/students").json()
     assert listed["total"] == 3
     zarina = next(item for item in listed["items"] if item["full_name"] == "Karimova Zarina")

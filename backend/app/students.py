@@ -1,4 +1,8 @@
-"""Student records for admins: manual management and bulk import from an Excel workbook."""
+"""Student records for admins: manual management and bulk import from an Excel workbook.
+
+Every student has a generated pass key, which a parent uses to sign up. Admins see it in the list
+and can replace it with a new one.
+"""
 from datetime import date, datetime, timezone
 from io import BytesIO
 import re
@@ -17,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .admin_auth import AdminSession, check_origin, private_response, require_admin
 from .db import StudentRecord, get_session
+from .pass_keys import new_pass_key, normalise_pass_key
 from .schemas import ImportProblem, StudentImportResult, StudentIn, StudentOut, StudentPage
 
 router = APIRouter(prefix="/api/admin/students", tags=["Local admin"], dependencies=[Depends(private_response)])
@@ -39,7 +44,6 @@ COLUMN_KEYWORDS = {
 }
 TEMPLATE_HEADERS = ["Full name", "Grade", "Class letter", "Date of birth", "Parent or guardian", "Parent phone"]
 TEMPLATE_EXAMPLE = ["Aliyev Vali", 5, "A", "2015-09-01", "Aliyev Sardor", "+998 90 123 45 67"]
-
 
 def normalise(text) -> str:
     return " ".join(str(text or "").replace("‘", "'").replace("’", "'").replace("`", "'").replace("ʻ", "'").lower().split())
@@ -174,13 +178,16 @@ async def students(
         phone_query = re.sub(r"[+ ().-]", "", q.strip())
         if phone_query.isascii() and phone_query.isdigit() and len(phone_query) >= 3:
             search.append(StudentRecord.parent_phone.contains(phone_query, autoescape=True))
+        # A whole pass key, typed with or without dashes, finds its student.
+        if normalise_pass_key(q):
+            search.append(StudentRecord.pass_key == normalise_pass_key(q))
         filters.append(or_(*search))
     if grade is not None:
         filters.append(StudentRecord.grade == grade)
     try:
         total = await db.scalar(select(func.count()).select_from(StudentRecord).where(*filters))
         everyone = await db.scalar(select(func.count()).select_from(StudentRecord))
-        records = (await db.scalars(select(StudentRecord).where(*filters).order_by(StudentRecord.grade, StudentRecord.class_name.nulls_first(), StudentRecord.full_name, StudentRecord.id).offset((page - 1) * page_size).limit(page_size))).all()
+        records =(await db.scalars(select(StudentRecord).where(*filters).order_by(StudentRecord.grade, StudentRecord.class_name.nulls_first(), StudentRecord.full_name, StudentRecord.id).offset((page - 1) * page_size).limit(page_size))).all()
     except SQLAlchemyError:
         raise HTTPException(503, UNAVAILABLE)
     return {"items": records, "total": total, "page": page, "page_size": page_size, "all_students": everyone}
@@ -188,8 +195,9 @@ async def students(
 
 @router.post("", response_model=StudentOut, status_code=201)
 async def create_student(payload: StudentIn, request: Request, admin: Admin, db: Db):
+    """Adds a student with a newly generated pass key."""
     check_origin(request)
-    record = StudentRecord(**payload.model_dump())
+    record = StudentRecord(**payload.model_dump(), pass_key=new_pass_key())
     try:
         db.add(record)
         await db.commit()
@@ -217,7 +225,7 @@ def template(admin: Admin):
 
 @router.post("/import", response_model=StudentImportResult)
 async def import_students(request: Request, admin: Admin, db: Db, dry_run: bool = True):
-    """Reads an .xlsx workbook sent as the request body. A dry run only reports what would happen."""
+    """Reads an .xlsx workbook sent as the request body. A dry run only reports; saving also returns the new pass keys."""
     check_origin(request)
     content = await request.body()
     if not content:
@@ -225,6 +233,7 @@ async def import_students(request: Request, admin: Admin, db: Db, dry_run: bool 
     if len(content) > MAX_FILE_BYTES:
         raise HTTPException(413, "too_large")
     parsed, problems, total = read_workbook(content)
+    pass_keys: list[dict] = []
     try:
         existing = {student_key(name, grade, class_name) for name, grade, class_name in (await db.execute(select(StudentRecord.full_name, StudentRecord.grade, StudentRecord.class_name))).all()}
         fresh: list[StudentIn] = []
@@ -238,12 +247,15 @@ async def import_students(request: Request, admin: Admin, db: Db, dry_run: bool 
             existing.add(key)
             fresh.append(student)
         if not dry_run and fresh:
-            db.add_all([StudentRecord(**student.model_dump()) for student in fresh])
+            for student in fresh:
+                key = new_pass_key()
+                db.add(StudentRecord(**student.model_dump(), pass_key=key))
+                pass_keys.append({"full_name": student.full_name, "grade": student.grade, "class_name": student.class_name, "pass_key": key})
             await db.commit()
     except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(503, UNAVAILABLE)
-    return {"rows": total, "added": len(fresh), "duplicates": duplicates, "problems": problems[:100], "problem_count": len(problems), "preview": fresh[:8], "saved": not dry_run}
+    return {"rows": total, "added": len(fresh), "duplicates": duplicates, "problems": problems[:100], "problem_count": len(problems), "preview": fresh[:8], "saved": not dry_run, "pass_keys": pass_keys}
 
 
 @router.put("/{student_id}", response_model=StudentOut)
@@ -255,6 +267,23 @@ async def update_student(student_id: UUID, payload: StudentIn, request: Request,
             raise HTTPException(404, "Student not found.")
         for field, value in payload.model_dump().items():
             setattr(record, field, value)
+        record.updated_at = datetime.now(timezone.utc)
+        await db.commit()
+    except SQLAlchemyError:
+        await db.rollback()
+        raise HTTPException(503, UNAVAILABLE)
+    return record
+
+
+@router.post("/{student_id}/pass-key", response_model=StudentOut)
+async def generate_pass_key(student_id: UUID, request: Request, admin: Admin, db: Db):
+    """Gives a student a new generated pass key; the earlier key stops working."""
+    check_origin(request)
+    try:
+        record = await db.get(StudentRecord, str(student_id))
+        if record is None:
+            raise HTTPException(404, "Student not found.")
+        record.pass_key = new_pass_key()
         record.updated_at = datetime.now(timezone.utc)
         await db.commit()
     except SQLAlchemyError:

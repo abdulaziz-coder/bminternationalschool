@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from .config import settings
+from .pass_keys import new_pass_key
 
 engine = create_async_engine(settings.database_url, pool_pre_ping=True, connect_args={"connect_timeout": 3})
 Session = async_sessionmaker(engine, expire_on_commit=False)
@@ -85,6 +86,8 @@ class StudentRecord(Base):
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     parent_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     parent_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Generated for every student; a parent uses it to sign up. Admins can read it in the student list at any time.
+    pass_key: Mapped[str] = mapped_column(String(14), unique=True, default=new_pass_key)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 

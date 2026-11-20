@@ -26,6 +26,14 @@ export const studentUz = {
   'The file needs a column for the student’s name and a column for the grade.': 'Faylda o‘quvchi ismi va sinf ustunlari bo‘lishi kerak.',
   'The file has more than 2,000 students. Please split it into smaller files.': 'Faylda 2 000 dan ortiq o‘quvchi bor. Uni kichikroq fayllarga bo‘ling.',
   'The file is larger than 5 MB.': 'Fayl hajmi 5 MB dan katta.',
+  'Pass key': 'Kirish kaliti', 'Pass keys': 'Kirish kalitlari', 'Done': 'Tayyor',
+  'Search by student, parent, phone, or pass key': 'O‘quvchi, ota-ona, telefon yoki kirish kaliti bo‘yicha qidirish',
+  'Generate pass key': 'Kalit yaratish', 'Generate a new pass key?': 'Yangi kirish kaliti yaratilsinmi?',
+  'The student’s current pass key stops working and is replaced by a new one. The new pass key then works until you generate another.': 'O‘quvchining joriy kirish kaliti ishlamay qoladi va yangisi bilan almashtiriladi. Yangi kalit siz yana boshqasini yaratmaguningizcha amal qiladi.',
+  'Give each family their pass key.': 'Har bir oilaga kirish kalitini bering.',
+  'A parent uses the pass key to sign up. It keeps working until you generate a new one, and you can always find it in the student list.': 'Ota-ona kirish kaliti yordamida ro‘yxatdan o‘tadi. Kalit siz yangisini yaratmaguningizcha amal qiladi va uni istalgan vaqtda o‘quvchilar ro‘yxatidan topishingiz mumkin.',
+  'A pass key for parent sign-up is generated automatically when you save.': 'Saqlaganingizda ota-onaning ro‘yxatdan o‘tishi uchun kirish kaliti avtomatik yaratiladi.',
+  'A pass key is generated for every new student.': 'Har bir yangi o‘quvchi uchun kirish kaliti yaratiladi.',
 };
 export const studentRu: Record<keyof typeof studentUz, string> = {
   'Students': 'Ученики',
@@ -55,4 +63,12 @@ export const studentRu: Record<keyof typeof studentUz, string> = {
   'The file needs a column for the student’s name and a column for the grade.': 'В файле нужны столбцы с именем ученика и классом.',
   'The file has more than 2,000 students. Please split it into smaller files.': 'В файле больше 2 000 учеников. Разделите его на файлы поменьше.',
   'The file is larger than 5 MB.': 'Файл больше 5 МБ.',
+  'Pass key': 'Ключ доступа', 'Pass keys': 'Ключи доступа', 'Done': 'Готово',
+  'Search by student, parent, phone, or pass key': 'Поиск по ученику, родителю, телефону или ключу доступа',
+  'Generate pass key': 'Создать ключ', 'Generate a new pass key?': 'Создать новый ключ доступа?',
+  'The student’s current pass key stops working and is replaced by a new one. The new pass key then works until you generate another.': 'Текущий ключ доступа ученика перестанет работать и будет заменён новым. Новый ключ действует, пока вы не создадите ещё один.',
+  'Give each family their pass key.': 'Передайте каждой семье её ключ доступа.',
+  'A parent uses the pass key to sign up. It keeps working until you generate a new one, and you can always find it in the student list.': 'Родитель регистрируется с помощью ключа доступа. Ключ действует, пока вы не создадите новый, и его всегда можно найти в списке учеников.',
+  'A pass key for parent sign-up is generated automatically when you save.': 'Ключ доступа для регистрации родителя создаётся автоматически при сохранении.',
+  'A pass key is generated for every new student.': 'Для каждого нового ученика создаётся ключ доступа.',
 };

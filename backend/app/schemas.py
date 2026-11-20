@@ -154,6 +154,14 @@ class StudentOut(StudentIn):
     id: UUID
     created_at: datetime
     updated_at: datetime
+    pass_key: str
+
+
+class ImportedPassKey(BaseModel):
+    full_name: str
+    grade: int
+    class_name: str | None
+    pass_key: str
 
 
 class StudentPage(BaseModel):
@@ -178,6 +186,7 @@ class StudentImportResult(BaseModel):
     problem_count: int
     preview: list[StudentIn]
     saved: bool
+    pass_keys: list[ImportedPassKey]
 
 
 class TeacherIn(BaseModel):

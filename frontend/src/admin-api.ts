@@ -72,14 +72,17 @@ export async function deleteNotice(id: string) {
   await request(`/notices/${id}`, { method: 'DELETE' });
 }
 
-const student = z.object({ id: z.uuid(), full_name: z.string(), grade: z.number(), class_name: z.string().nullable(), birth_date: z.string().nullable(), parent_name: z.string().nullable(), parent_phone: z.string().nullable() });
+const student = z.object({ id: z.uuid(), full_name: z.string(), grade: z.number(), class_name: z.string().nullable(), birth_date: z.string().nullable(), parent_name: z.string().nullable(), parent_phone: z.string().nullable(), pass_key: z.string() });
 const studentPage = z.object({ items: z.array(student), total: z.number(), page: z.number(), page_size: z.number(), all_students: z.number() });
+const issuedPassKey = z.object({ full_name: z.string(), grade: z.number(), class_name: z.string().nullable(), pass_key: z.string() });
 const importReport = z.object({
   rows: z.number(), added: z.number(), duplicates: z.number(), problem_count: z.number(), saved: z.boolean(),
   problems: z.array(z.object({ row: z.number(), name: z.string().nullable(), reason: z.enum(['missing_name', 'bad_grade', 'bad_date', 'bad_phone', 'bad_value']) })),
-  preview: z.array(student.omit({ id: true })),
+  preview: z.array(student.omit({ id: true, pass_key: true })),
+  pass_keys: z.array(issuedPassKey),
 });
 export type AdminStudent = z.infer<typeof student>;
+export type IssuedPassKey = z.infer<typeof issuedPassKey>;
 export type StudentDraft = { full_name: string; grade: number; class_name: string; birth_date: string | null; parent_name: string; parent_phone: string };
 export type ImportReport = z.infer<typeof importReport>;
 export async function adminStudents(filters: { q: string; grade: string; page: number }) {
@@ -88,9 +91,16 @@ export async function adminStudents(filters: { q: string; grade: string; page: n
   if (filters.grade) params.set('grade', filters.grade);
   return studentPage.parse(await request(`/students?${params}`));
 }
-/** Adds a student, or replaces the one with the given id. */
-export async function saveStudent(id: string | null, draft: StudentDraft) {
-  return student.parse(await request(id ? `/students/${id}` : '/students', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }));
+/** Adds a student; the reply includes their generated pass key. */
+export async function createStudent(draft: StudentDraft) {
+  return student.parse(await request('/students', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }));
+}
+export async function updateStudent(id: string, draft: StudentDraft) {
+  return student.parse(await request(`/students/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }));
+}
+/** Replaces one student's pass key; the earlier key stops working. */
+export async function generateStudentPassKey(id: string) {
+  return student.parse(await request(`/students/${id}/pass-key`, { method: 'POST' }));
 }
 export async function deleteStudent(id: string) {
   await request(`/students/${id}`, { method: 'DELETE' });

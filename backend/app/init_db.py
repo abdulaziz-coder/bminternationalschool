@@ -4,6 +4,7 @@ from sqlalchemy import text
 from .db import Base, engine
 from .runtime import loop_factory
 from .admin_auth import ensure_admin_account
+from .pass_keys import new_pass_key
 
 
 async def main():
@@ -33,6 +34,14 @@ async def main():
         await connection.execute(text("ALTER TABLE notices ADD COLUMN IF NOT EXISTS title_ru VARCHAR(160)"))
         await connection.execute(text("ALTER TABLE notices ADD COLUMN IF NOT EXISTS body_ru TEXT"))
         await connection.execute(text("UPDATE notices SET title_en = title, body_en = body WHERE title_uz IS NULL AND title_en IS NULL AND title_ru IS NULL"))
+        # Every student has a readable pass key. Students without one (added before pass keys, or while keys
+        # were kept only as digests, which cannot be turned back into keys) are given a new key once.
+        await connection.execute(text("ALTER TABLE students ADD COLUMN IF NOT EXISTS pass_key VARCHAR(14)"))
+        for student_id in (await connection.execute(text("SELECT id FROM students WHERE pass_key IS NULL"))).scalars().all():
+            await connection.execute(text("UPDATE students SET pass_key = :key WHERE id = :id"), {"key": new_pass_key(), "id": student_id})
+        await connection.execute(text("ALTER TABLE students ALTER COLUMN pass_key SET NOT NULL"))
+        await connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_students_pass_key ON students (pass_key)"))
+        await connection.execute(text("ALTER TABLE students DROP COLUMN IF EXISTS pass_key_hash"))
     await engine.dispose()
     ensure_admin_account()
     print("Local admissions database initialized.")
