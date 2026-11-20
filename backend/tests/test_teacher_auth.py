@@ -11,7 +11,7 @@ from test_api import database_client  # noqa: F401
 
 TEACHER = {"full_name": "Karimova Zarina", "subject": "Mathematics", "phone": "+998 90 123 45 67"}
 ELSEWHERE = {"Origin": "https://unrelated.example"}
-IDENTITY = {"full_name": "Karimova Zarina", "subject": "Mathematics", "login": "karimova.zarina"}
+IDENTITY = {"full_name": "Karimova Zarina", "subject": "Mathematics", "subject_names": {"en": "Mathematics"}, "login": "karimova.zarina"}
 
 
 @pytest.fixture(autouse=True)
@@ -28,7 +28,7 @@ def add_teacher(client, **changes) -> dict:
     admin_login(client)
     # A teacher's subject must be in the admin's subject list.
     for subject in ("Mathematics", "Physics"):
-        client.post("/api/admin/subjects", json={"name": subject, "grades": [5]}, headers=ORIGIN)
+        client.post("/api/admin/subjects", json={"names": {"en": subject}, "grades": [5]}, headers=ORIGIN)
     created = client.post("/api/admin/teachers", json={**TEACHER, **changes}, headers=ORIGIN).json()
     client.post("/api/admin/logout", headers=ORIGIN)
     return created
@@ -74,7 +74,7 @@ def test_teacher_signs_in_with_the_generated_details(database_client):
     # The admin edits the teacher: they stay signed in and see the change.
     admin_login(client)
     client.put(f"/api/admin/teachers/{created['teacher']['id']}", json={**TEACHER, "subject": "Physics"}, headers=ORIGIN)
-    assert client.get("/api/teacher/session").json() == {**IDENTITY, "subject": "Physics"}
+    assert client.get("/api/teacher/session").json() == {**IDENTITY, "subject": "Physics", "subject_names": {"en": "Physics"}}
 
     assert client.post("/api/teacher/logout", headers=ELSEWHERE).status_code == 403
     assert client.post("/api/teacher/logout", headers=ORIGIN).status_code == 204

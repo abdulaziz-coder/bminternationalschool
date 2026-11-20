@@ -42,6 +42,11 @@ async def main():
         await connection.execute(text("ALTER TABLE students ALTER COLUMN pass_key SET NOT NULL"))
         await connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_students_pass_key ON students (pass_key)"))
         await connection.execute(text("ALTER TABLE students DROP COLUMN IF EXISTS pass_key_hash"))
+        # Subjects gained a name per language. A subject saved earlier had one name, written in the
+        # school's main language, so it becomes the Uzbek name; admins can move it in the editor.
+        for language in ("uz", "en", "ru"):
+            await connection.execute(text(f"ALTER TABLE subjects ADD COLUMN IF NOT EXISTS name_{language} VARCHAR(80)"))
+        await connection.execute(text("UPDATE subjects SET name_uz = name WHERE name_uz IS NULL AND name_en IS NULL AND name_ru IS NULL"))
     await engine.dispose()
     ensure_admin_account()
     print("Local admissions database initialized.")

@@ -209,3 +209,8 @@ html:has(.admin-page){overflow-x:clip}
 @container admin-list (max-width:899px){.admin-inbox td[data-label]>.admin-grade-list{justify-content:flex-end}}
 .admin-form-note.admin-form-warning{background:#fff6e3;color:#7a5613}
 .admin-notice-form select{width:100%}
+/* The subject name in each language: three fields side by side, stacked on narrow screens. */
+.admin-subject-names .admin-form-row{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.admin-subject-names label{margin-bottom:0}
+.admin-subject-names .admin-category-hint,.admin-subject-names .admin-field-error{margin-top:10px}
+@media(max-width:700px){.admin-subject-names .admin-form-row{grid-template-columns:minmax(0,1fr);gap:12px}}

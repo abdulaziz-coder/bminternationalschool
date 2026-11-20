@@ -171,14 +171,26 @@ class ParentChild(BaseModel):
 
 
 class SubjectIn(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
-    name: str = Field(min_length=2, max_length=80)
+    model_config = ConfigDict(extra="forbid")
+    # The subject's name in each language. At least one is needed; an empty name means "not written".
+    names: dict[Language, Annotated[str, Field(max_length=80)]]
     grades: list[Annotated[int, Field(ge=1, le=11, strict=True)]] = Field(default_factory=list, max_length=11)
 
-    @field_validator("name")
+    @field_validator("names")
     @classmethod
-    def single_spaces(cls, value: str) -> str:
-        return " ".join(value.split())
+    def tidy_names(cls, value: dict[str, str]) -> dict[str, str]:
+        names = {language: " ".join(text.split()) for language, text in value.items()}
+        names = {language: text for language, text in names.items() if text}
+        if not names:
+            raise ValueError("Enter the subject's name in at least one language.")
+        if any(len(text) < 2 for text in names.values()):
+            raise ValueError("Each name needs at least 2 characters.")
+        return {language: names[language] for language in LANGUAGES if language in names}
+
+    @property
+    def name(self) -> str:
+        """The main name: Uzbek first, then English, then Russian."""
+        return next(self.names[language] for language in LANGUAGES if language in self.names)
 
     @field_validator("grades")
     @classmethod
@@ -192,6 +204,7 @@ class SubjectOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     name: str
+    names: dict[Language, str]
     grades: list[int]
     # How many teachers teach this subject.
     teachers: int
@@ -210,6 +223,8 @@ class TeacherIdentity(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     full_name: str
     subject: str
+    # The subject's name in each language, when it is in the subject list.
+    subject_names: dict[Language, str] = Field(default_factory=dict)
     login: str
 
 

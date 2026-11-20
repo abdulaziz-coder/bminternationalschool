@@ -110,9 +110,15 @@ class TeacherRecord(Base):
 class SubjectRecord(Base):
     __tablename__ = "subjects"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    # The main name: the Uzbek name, or the English or Russian one when there is no Uzbek name.
+    # Teachers' records hold this name.
     name: Mapped[str] = mapped_column(String(80))
-    # The name in lower case with single spaces; unique, so "Maths" and " maths " are the same subject.
+    # The main name in lower case with single spaces; unique, so "Maths" and " maths " are the same subject.
     name_key: Mapped[str] = mapped_column(String(80), unique=True)
+    # The name in each language; any of them may be missing.
+    name_uz: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    name_en: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    name_ru: Mapped[str | None] = mapped_column(String(80), nullable=True)
     # The grades (1-11) that take the subject, in ascending order. Empty until an admin assigns some.
     grades: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

@@ -21,7 +21,7 @@ XLSX_HEADERS = {**ORIGIN, "Content-Type": "application/vnd.openxmlformats-office
 def add_subjects(client, *names):
     """The subjects a teacher can be given must be in the admin's subject list first."""
     for name in names:
-        assert client.post("/api/admin/subjects", json={"name": name, "grades": [5]}, headers=ORIGIN).status_code == 201
+        assert client.post("/api/admin/subjects", json={"names": {"en": name}, "grades": [5]}, headers=ORIGIN).status_code == 201
 
 
 def workbook(*rows) -> bytes:

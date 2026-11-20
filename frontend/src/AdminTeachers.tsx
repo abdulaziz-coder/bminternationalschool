@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from './i18n';
-import { AdminError, adminSubjects, adminTeachers, createTeacher, deleteTeacher, importTeachers, resetTeacherPassword, teacherTemplateUrl, updateTeacher, type AdminTeacher, type TeacherDraft, type TeacherImportReport } from './admin-api';
+import { AdminError, adminSubjects, subjectLabel, adminTeachers, createTeacher, deleteTeacher, importTeachers, resetTeacherPassword, teacherTemplateUrl, updateTeacher, type AdminTeacher, type TeacherDraft, type TeacherImportReport } from './admin-api';
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const blank: TeacherDraft = { full_name: '', subject: '', phone: '' };
@@ -12,7 +12,7 @@ type Issued = { full_name: string; subject: string; login: string; password: str
 
 /** The admin tab for the staff list: add, edit, and remove teachers, import them from Excel, and issue their sign-in details. */
 export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void }) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const client = useQueryClient();
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
@@ -124,6 +124,9 @@ export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void
   const saveError = create.error ?? update.error;
   const confirming = deleting ?? resetting;
   const subjectNames = (subjects.data ?? []).map(item => item.name);
+  // A teacher's record holds the subject's main name; show it in the admin's language when it is in the list.
+  const subjectName = (name: string) => { const found = subjects.data?.find(item => item.name === name); return found ? subjectLabel(found, locale) : name; };
+  const subjectOptions = (subjects.data ?? []).map(item => ({ value: item.name, label: subjectLabel(item, locale) })).sort((a, b) => a.label.localeCompare(b.label, locale));
   // A teacher added before the subject list existed keeps their subject until the admin picks another.
   const legacySubject = editing && editing !== 'new' && !subjectNames.includes(editing.subject) ? editing.subject : null;
   const noSubjects = subjects.isSuccess && subjectNames.length === 0;
@@ -135,7 +138,7 @@ export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void
       <div className="admin-toolbar"><label className="admin-search" htmlFor="teacher-search"><span className="sr-only">{t('Search teachers')}</span><span aria-hidden="true">⌕</span><input id="teacher-search" type="search" placeholder={t('Search by teacher, subject, phone, or login')} value={search} maxLength={200} onChange={event => setSearch(event.target.value)} /></label></div>
       {list.isPending ? <div className="admin-empty" role="status">{t('Loading…')}</div> : list.isError ? <div className="admin-empty admin-error" role="alert"><p>{errorMessage(list.error)}</p><button className="admin-secondary" onClick={() => list.refetch()}>{t('Try again')}</button></div> : list.data.items.length ? <div className="admin-table-scroll"><table><thead><tr><th scope="col">{t('Teacher')}</th><th scope="col">{t('Subject')}</th><th scope="col">{t('Phone')}</th><th scope="col">{t('Login')}</th><th scope="col"><span className="sr-only">{t('Edit')}</span></th></tr></thead><tbody>{list.data.items.map(item => <tr key={item.id}>
         <td><div className="admin-person"><span className="admin-avatar" aria-hidden="true">{item.full_name.trim().charAt(0).toUpperCase()}</span><strong>{item.full_name}</strong></div></td>
-        <td data-label={t('Subject')}><span className="admin-class">{item.subject}</span></td>
+        <td data-label={t('Subject')}><span className="admin-class">{subjectName(item.subject)}</span></td>
         <td data-label={t('Phone')}><span className="admin-email">{item.phone || t('Not recorded')}</span></td>
         <td data-label={t('Login')}><code className="admin-code">{item.login}</code></td>
         <td className="admin-row-actions"><button className="admin-view" onClick={() => compose(item)} aria-label={`${t('Edit')}: ${item.full_name}`}>{t('Edit')} ↗</button><button className="admin-view" onClick={() => { reset.reset(); setSaved(null); setResetting(item); }} aria-label={`${t('Generate password')}: ${item.full_name}`}>{t('Generate password')}</button><button className="admin-delete-link" onClick={() => { remove.reset(); setSaved(null); setDeleting(item); }} aria-label={`${t('Remove')}: ${item.full_name}`}>{t('Remove')}</button></td>
@@ -187,7 +190,7 @@ export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void
         <h2 id="teacher-dialog-title">{t(editing === 'new' ? 'Add teacher' : 'Edit teacher')}</h2>
         <label htmlFor="teacher-name">{t('Full name')}<input id="teacher-name" ref={nameInput} value={draft.full_name} maxLength={120} autoComplete="off" onChange={event => set('full_name', event.target.value)} aria-invalid={!!errors.full_name} aria-describedby={errors.full_name ? 'teacher-name-error' : undefined} required />{errors.full_name && <span id="teacher-name-error" className="admin-field-error">{t(errors.full_name)}</span>}</label>
         <div className="admin-form-row two">
-          <label htmlFor="teacher-subject">{t('Subject taught')}<select id="teacher-subject" value={draft.subject} disabled={subjects.isPending} onChange={event => set('subject', event.target.value)} aria-invalid={!!errors.subject} aria-describedby={errors.subject ? 'teacher-subject-error' : noSubjects ? 'teacher-subject-hint' : undefined} required><option value="" disabled hidden>{t(subjects.isPending ? 'Loading…' : 'Choose a subject')}</option>{legacySubject && <option value={legacySubject}>{legacySubject} ({t('not in the subject list')})</option>}{subjectNames.map(name => <option key={name} value={name}>{name}</option>)}</select>{errors.subject && <span id="teacher-subject-error" className="admin-field-error">{t(errors.subject)}</span>}</label>
+          <label htmlFor="teacher-subject">{t('Subject taught')}<select id="teacher-subject" value={draft.subject} disabled={subjects.isPending} onChange={event => set('subject', event.target.value)} aria-invalid={!!errors.subject} aria-describedby={errors.subject ? 'teacher-subject-error' : noSubjects ? 'teacher-subject-hint' : undefined} required><option value="" disabled hidden>{t(subjects.isPending ? 'Loading…' : 'Choose a subject')}</option>{legacySubject && <option value={legacySubject}>{legacySubject} ({t('not in the subject list')})</option>}{subjectOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{errors.subject && <span id="teacher-subject-error" className="admin-field-error">{t(errors.subject)}</span>}</label>
           <label htmlFor="teacher-phone">{t('Phone number')} <small>({t('Optional')})</small><input id="teacher-phone" type="tel" inputMode="tel" value={draft.phone} maxLength={32} placeholder="+998 90 123 45 67" autoComplete="off" onChange={event => set('phone', event.target.value)} aria-invalid={!!errors.phone} aria-describedby={errors.phone ? 'teacher-phone-error' : undefined} />{errors.phone && <span id="teacher-phone-error" className="admin-field-error">{t(errors.phone)}</span>}</label>
         </div>
         {(noSubjects || subjects.isError) && <p id="teacher-subject-hint" className="admin-form-note admin-form-warning" role="note">{t(subjects.isError ? 'The subject list could not be loaded. Please try again.' : 'There are no subjects yet. Add them in the Subjects tab first, then come back to add teachers.')} {subjects.isError ? <button type="button" className="admin-view" onClick={() => subjects.refetch()}>{t('Try again')}</button> : <a className="admin-view" href="#subjects" onClick={() => window.location.reload()}>{t('Subjects')} ↗</a>}</p>}

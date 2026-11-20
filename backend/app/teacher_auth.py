@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .admin_auth import check_origin, hash_password, private_response
 from .db import TeacherRecord, get_session
 from .schemas import TeacherIdentity, TeacherLoginIn
+from .subjects import subject_translations
 
 router = APIRouter(prefix="/api/teacher", tags=["Teachers"], dependencies=[Depends(private_response)])
 Db = Annotated[AsyncSession, Depends(get_session)]
@@ -76,6 +77,14 @@ async def current_teacher(request: Request, db: Db) -> TeacherRecord:
 Teacher = Annotated[TeacherRecord, Depends(current_teacher)]
 
 
+async def identity(db: AsyncSession, teacher: TeacherRecord) -> dict:
+    try:
+        names = await subject_translations(db, teacher.subject)
+    except SQLAlchemyError:
+        names = {}
+    return {"full_name": teacher.full_name, "subject": teacher.subject, "subject_names": names, "login": teacher.login}
+
+
 @router.post("/login", response_model=TeacherIdentity)
 async def login(payload: TeacherLoginIn, request: Request, response: Response, db: Db):
     check_origin(request)
@@ -104,12 +113,12 @@ async def login(payload: TeacherLoginIn, request: Request, response: Response, d
     token = secrets.token_urlsafe(32)
     sessions[hashlib.sha256(token.encode()).hexdigest()] = TeacherSession(teacher.id, teacher.password_hash, time.time() + SESSION_SECONDS)
     response.set_cookie(COOKIE, token, httponly=True, samesite="strict", secure=False, path="/api/teacher", max_age=SESSION_SECONDS)
-    return teacher
+    return await identity(db, teacher)
 
 
 @router.get("/session", response_model=TeacherIdentity)
-async def session(teacher: Teacher):
-    return teacher
+async def session(teacher: Teacher, db: Db):
+    return await identity(db, teacher)
 
 
 @router.post("/logout", status_code=204)

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const identity = z.object({ full_name: z.string(), subject: z.string(), login: z.string() });
+const identity = z.object({ full_name: z.string(), subject: z.string(), subject_names: z.partialRecord(z.enum(['uz', 'en', 'ru']), z.string()).default({}), login: z.string() });
 export type TeacherIdentity = z.infer<typeof identity>;
 export class TeacherError extends Error { constructor(public status: number, message: string) { super(message); } }
 

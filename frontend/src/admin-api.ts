@@ -149,9 +149,11 @@ export async function importTeachers(file: File, save: boolean) {
 }
 export const teacherTemplateUrl = '/api/admin/teachers/template';
 
-const subject = z.object({ id: z.uuid(), name: z.string(), grades: z.array(z.number()), teachers: z.number() });
+const subject = z.object({ id: z.uuid(), name: z.string(), names: z.partialRecord(z.enum(['uz', 'en', 'ru']), z.string()), grades: z.array(z.number()), teachers: z.number() });
 export type AdminSubject = z.infer<typeof subject>;
-export type SubjectDraft = { name: string; grades: number[] };
+/** The name in each language (an empty name is not saved) and the grades that take the subject. */
+export type SubjectDraft = { names: Record<'uz' | 'en' | 'ru', string>; grades: number[] };
+export { subjectLabel } from './subject-names';
 /** Every subject, in alphabetical order. */
 export async function adminSubjects() { return z.array(subject).parse(await request('/subjects')); }
 /** Adds a subject, or replaces the one with the given id. */

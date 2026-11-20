@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import Brand from './Brand';
 import { LanguageSwitcher, useLanguage } from './i18n';
 import { teacherLogin, teacherLogout, teacherSession, TeacherError } from './teacher-api';
+import { subjectLabel } from './subject-names';
 import './admin.css';
 import './portal.css';
 
@@ -49,7 +50,7 @@ export default function Teacher() {
         {/* Nothing is built for signed-in teachers yet; this only confirms the sign-in worked. */}
         <span className="admin-lock portal-signed-in" aria-hidden="true"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.500 4.500 4.500L19 7.500" /></svg></span>
         <p className="admin-eyebrow">{t('For teachers')}</p><h1>{t('You are signed in')}</h1><p>{t('The teacher pages are being prepared and will appear here.')}</p>
-        <div className="portal-identity"><span className="admin-avatar" aria-hidden="true">{teacher.full_name.trim().charAt(0).toUpperCase()}</span><div><strong>{teacher.full_name}</strong><small>{teacher.subject}</small></div></div>
+        <div className="portal-identity"><span className="admin-avatar" aria-hidden="true">{teacher.full_name.trim().charAt(0).toUpperCase()}</span><div><strong>{teacher.full_name}</strong><small>{subjectLabel({ name: teacher.subject, names: teacher.subject_names }, locale)}</small></div></div>
         {signOut.isError && <p className="admin-error" role="alert">{errorMessage(signOut.error)}</p>}
         <button className="button admin-login-button portal-sign-out" type="button" onClick={() => signOut.mutate()} disabled={signOut.isPending}>{t('Sign out')}<span>↗</span></button>
         <a className="text-link" href="/">← {t('Back to website')}</a>
