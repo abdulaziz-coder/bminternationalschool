@@ -157,7 +157,7 @@ export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void
       </div> : deleting ? <div className="admin-dialog-content">
         <p className="admin-eyebrow">{t('Remove teacher')}</p><h2 id="teacher-dialog-title">{t('Remove this teacher?')}</h2>
         <div className="admin-delete-target"><strong>{deleting.full_name}</strong><span>{deleting.subject}</span></div>
-        <p className="admin-delete-warning">{t('This permanently removes the teacher and their sign-in from the local database. This cannot be undone.')}</p>
+        <p className="admin-delete-warning">{t('This permanently removes the teacher, their sign-in, and their lessons in the timetable from the local database. This cannot be undone.')}</p>
         {remove.isError && <p className="admin-error" role="alert">{errorMessage(remove.error)}</p>}
         <div className="admin-confirm-actions"><button ref={safeButton} className="admin-secondary" type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button className="admin-danger" type="button" disabled={busy} onClick={() => remove.mutate(deleting)}>{t(remove.isPending ? 'Deleting…' : 'Delete permanently')}</button></div>
       </div> : resetting ? <div className="admin-dialog-content">

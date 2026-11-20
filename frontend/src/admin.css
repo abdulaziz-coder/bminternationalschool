@@ -214,3 +214,71 @@ html:has(.admin-page){overflow-x:clip}
 .admin-subject-names label{margin-bottom:0}
 .admin-subject-names .admin-category-hint,.admin-subject-names .admin-field-error{margin-top:10px}
 @media(max-width:700px){.admin-subject-names .admin-form-row{grid-template-columns:minmax(0,1fr);gap:12px}}
+
+/* Timetable: the class picker, the lessons to place, and the week. */
+.tt-panel{margin-bottom:18px}
+.tt-class-bar{flex-wrap:nowrap;align-items:flex-end;justify-content:space-between}
+.tt-class-picker{display:flex;flex-direction:column;gap:7px;min-width:min(100%,300px);font-size:11px;color:#44647e}
+.tt-class-picker select{min-height:46px;padding:0 14px;border:1px solid #d8e4ee;border-radius:12px;background:#fff;color:#174265;font-size:14px;font-weight:600}
+.tt-summary{margin:0 0 13px;font-size:12px;color:#71889c;white-space:nowrap}.tt-summary strong{color:#174265}
+.tt-other{display:grid;grid-template-columns:140px minmax(0,200px) auto;align-items:end;gap:12px;padding:0 20px 20px}
+.tt-other label{display:flex;flex-direction:column;gap:7px;font-size:11px;color:#44647e}
+.tt-other select,.tt-other input{min-height:42px;padding:0 12px;border:1px solid #d8e4ee;border-radius:10px;background:#fff;font-size:13px}
+.tt-other-actions{display:flex;gap:8px}.tt-other .admin-field-error{grid-column:1/-1;margin:0}
+.tt{container:tt/inline-size;padding:22px;border:1px solid #d8e4ee;border-radius:20px;background:#fbfdff}
+.tt-palette{margin-bottom:20px}
+.tt-palette-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.tt-palette h2{margin:0;font-size:15px;color:#174265}
+.tt-search{flex:0 1 300px;min-width:0}
+.tt-options{display:flex;flex-wrap:wrap;gap:8px}
+.tt-option{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:150px;max-width:260px;padding:10px 34px 10px 14px;border:1px solid var(--tt-line);border-left:4px solid var(--tt-ink);border-radius:12px;background:var(--tt-bg);color:#174265;text-align:left;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.tt-option strong{font-size:13px;overflow-wrap:break-word}.tt-option span{font-size:11px;color:#55708a;overflow-wrap:break-word}
+.tt-option b{position:absolute;top:8px;right:9px;min-width:20px;padding:1px 6px;border-radius:50px;background:#fff;color:var(--tt-ink);font-size:10px;text-align:center}
+.tt-option:hover{box-shadow:0 6px 16px #1742651a}
+.tt-option[aria-pressed=true]{outline:2px solid var(--tt-ink);outline-offset:2px;box-shadow:0 8px 20px #17426524;transform:translateY(-1px)}
+.tt-hint{min-height:20px;margin:12px 0 0;font-size:12px;color:#71889c}.tt-hint.on{color:#174265}.tt-hint .admin-view{font-size:12px}
+.tt-palette .admin-error,.tt-status{margin:10px 0 0}
+.tt-week{overflow-x:auto}
+.tt-week table{width:100%;min-width:760px;border-collapse:separate;border-spacing:6px;table-layout:fixed}
+.tt-week th{font-size:11px;font-weight:500;color:#72899c}
+.tt-week thead th{padding:4px 2px 8px;text-align:center}.tt-week thead th span{display:block;margin-bottom:3px;font-size:10px;font-weight:700;color:#a3b4c3}
+.tt-week .tt-corner{width:96px;text-align:left}.tt-week .tt-corner span{display:inline;margin:0 6px 0 0;font-weight:500;color:#72899c}
+.tt-week tbody th{padding-right:6px;text-align:left;font-size:12px;font-weight:600;color:#174265}
+.tt-week td{height:76px;padding:0;vertical-align:stretch}
+.tt-lesson,.tt-empty,.tt-busy,.tt-place{box-sizing:border-box;height:100%;min-height:68px;border-radius:12px}
+.tt-lesson{position:relative;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:9px 8px 9px 10px;border:1px solid var(--tt-line);border-left:4px solid var(--tt-ink);background:var(--tt-bg);color:#174265}
+.tt-lesson strong{font-size:11.5px;line-height:1.3;overflow-wrap:break-word;hyphens:auto}.tt-lesson span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;font-size:10.5px;line-height:1.3;color:#55708a;overflow-wrap:break-word}
+/* The remove button appears on hover or keyboard focus, so the lesson's text can use the whole cell. */
+.tt-remove{position:absolute;top:4px;right:4px;display:grid;place-items:center;width:24px;height:24px;padding:0;border:1px solid var(--tt-line);border-radius:7px;background:#fff;color:#55708a;font-size:16px;line-height:1;cursor:pointer;opacity:0;transition:opacity .15s}
+.tt-lesson:hover .tt-remove,.tt-remove:focus-visible{opacity:1}.tt-remove:hover{border-color:#f0d6d1;background:#fff0ed;color:#a34343}
+@media(hover:none){.tt-remove{opacity:1}.tt-lesson{padding-right:30px}}
+.tt-empty{border:1px dashed #dbe5ee;background:#f7fafd}
+.tt-busy{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px dashed #e8d3cf;background:repeating-linear-gradient(-45deg,#fbf3f1,#fbf3f1 6px,#fff8f6 6px,#fff8f6 12px);color:#9a5a50;font-size:10.5px;text-align:center}
+.tt-busy strong{font-size:12px}
+.tt-place{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:6px;border:1.5px dashed var(--tt-line);background:#fff;color:var(--tt-ink);font-size:11.5px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}
+.tt-place span{font-size:18px;font-weight:400;opacity:.6}.tt-place em{font-style:normal;display:none}
+.tt-place:hover,.tt-place:focus-visible{border-color:var(--tt-ink);background:var(--tt-bg)}.tt-place:hover span,.tt-place:focus-visible span{opacity:1}.tt-place:hover em,.tt-place:focus-visible em{display:inline}
+.tt-day .tt-place{justify-content:flex-start;padding:6px 14px}.tt-day .tt-place em{display:inline;font-weight:500;opacity:.75}.tt-place:disabled{opacity:.5;cursor:wait}
+.tt-day{display:none}
+.tt-day-tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.tt-day-tabs button{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:52px;padding:6px 2px;border:1px solid #d8e4ee;border-radius:12px;background:#fff;color:#174265;font-size:13px;font-weight:600;cursor:pointer}
+.tt-day-tabs button small{font-size:10px;font-weight:500;color:#72899c}
+.tt-day-tabs button[aria-pressed=true]{border-color:#174265;background:#174265;color:#fff}.tt-day-tabs button[aria-pressed=true] small{color:#c9d8e6}
+.tt-day h3{margin:18px 0 10px;font-size:17px;color:#174265}
+.tt-day ol{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.tt-day li{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:stretch;gap:10px}
+.tt-time{display:flex;flex-direction:column;justify-content:center;font-size:11px;color:#72899c}.tt-time b{font-size:10px;color:#a3b4c3}
+.tt-day .tt-lesson,.tt-day .tt-empty,.tt-day .tt-busy,.tt-day .tt-place{min-height:58px}
+.tt-day .tt-lesson{padding-right:46px}.tt-day .tt-lesson strong{font-size:13px}.tt-day .tt-remove{top:50%;right:8px;width:34px;height:34px;margin-top:-17px;opacity:1}
+@container tt (max-width:759px){.tt-week{display:none}.tt-day{display:block}}
+@media(max-width:700px){.tt-class-bar{flex-wrap:wrap}.tt-summary{margin:0}.tt{padding:16px}.tt-other{grid-template-columns:1fr 1fr;padding:0 14px 16px}.tt-other-actions{grid-column:1/-1}.tt-other-actions button{flex:1}.tt-option{min-width:0;flex:1 1 140px;max-width:none}.tt-remove{width:34px;height:34px;opacity:1}}
+@media(prefers-reduced-motion:reduce){.tt-option,.tt-place,.tt-remove{transition:none}}
+/* Eight subject colours: a soft fill, a line, and a strong edge. */
+.tt-tone-0{--tt-bg:#eaf2fc;--tt-line:#d3e3f6;--tt-ink:#2f6db5}
+.tt-tone-1{--tt-bg:#e8f6ee;--tt-line:#cde9d8;--tt-ink:#2c8259}
+.tt-tone-2{--tt-bg:#fff4e2;--tt-line:#f3dfba;--tt-ink:#b07818}
+.tt-tone-3{--tt-bg:#f6ebfa;--tt-line:#e6d3ef;--tt-ink:#8b4fa8}
+.tt-tone-4{--tt-bg:#fdecec;--tt-line:#f3d2d2;--tt-ink:#b5484a}
+.tt-tone-5{--tt-bg:#e6f6f7;--tt-line:#c9e8ea;--tt-ink:#22818a}
+.tt-tone-6{--tt-bg:#eff0fb;--tt-line:#d9dbf3;--tt-ink:#4f58b0}
+.tt-tone-7{--tt-bg:#f3f5e4;--tt-line:#e1e6c3;--tt-ink:#6f7d22}

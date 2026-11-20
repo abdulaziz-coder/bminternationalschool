@@ -19,7 +19,12 @@ async function request(path: string, options?: RequestInit, timeout = 10_000) {
       const code = await response.json().then(body => String(body?.detail), () => '');
       throw new AdminError(400, reasons[code] ?? 'This file could not be read. Please upload an Excel .xlsx file.');
     }
-    if (path.startsWith('/students/import') && response.status === 400) {
+    if (path.startsWith('/timetable') && [404, 409, 422].includes(response.status)) {
+      // The timetable explains why a lesson could not be placed with a short code.
+      const reasons: Record<string, string> = { time_taken: 'This time already has a lesson.', teacher_busy: 'This teacher already has a lesson in another class at this time.', subject_not_for_grade: 'This subject is not taught in this grade. Check the subject’s grades in the Subjects tab.', teacher_not_found: 'This teacher no longer exists.', bad_class: 'Please check the class and try again.' };
+      const code = await response.json().then(body => String(body?.detail), () => '');
+      throw new AdminError(response.status, reasons[code] ?? 'Please check the lesson and try again.');
+    }    if (path.startsWith('/students/import') && response.status === 400) {
       // The import endpoint explains why a workbook was refused with a short code.
       const reasons: Record<string, string> = { missing_columns: 'The file needs a column for the student’s name and a column for the grade.', too_many_rows: 'The file has more than 2,000 students. Please split it into smaller files.' };
       const code = await response.json().then(body => String(body?.detail), () => '');
@@ -162,4 +167,29 @@ export async function saveSubject(id: string | null, draft: SubjectDraft) {
 }
 export async function deleteSubject(id: string) {
   await request(`/subjects/${id}`, { method: 'DELETE' });
+}
+
+const names = z.partialRecord(z.enum(['uz', 'en', 'ru']), z.string());
+const lesson = z.object({ id: z.uuid(), day: z.number(), period: z.number(), teacher_id: z.uuid(), teacher_name: z.string(), subject: z.string(), subject_names: names });
+const timetable = z.object({
+  grade: z.number(), class_name: z.string(), lessons: z.array(lesson),
+  busy: z.array(z.object({ teacher_id: z.uuid(), day: z.number(), period: z.number(), grade: z.number(), class_name: z.string() })),
+  options: z.array(z.object({ teacher_id: z.uuid(), teacher_name: z.string(), subject: z.string(), subject_names: names })),
+});
+const schoolClass = z.object({ grade: z.number(), class_name: z.string(), students: z.number(), lessons: z.number() });
+export type Timetable = z.infer<typeof timetable>;
+export type TimetableLesson = z.infer<typeof lesson>;
+export type LessonOption = Timetable['options'][number];
+export type SchoolClass = z.infer<typeof schoolClass>;
+/** Every class that has students or lessons. */
+export async function timetableClasses() { return z.array(schoolClass).parse(await request('/timetable/classes')); }
+/** A class's week: its lessons, when its possible teachers are busy elsewhere, and the lessons it can be given. */
+export async function classTimetable(grade: number, className: string) {
+  return timetable.parse(await request(`/timetable?${new URLSearchParams({ grade: String(grade), class_name: className })}`));
+}
+export async function addLesson(place: { grade: number; class_name: string; day: number; period: number; teacher_id: string }) {
+  return lesson.parse(await request('/timetable/lessons', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(place) }));
+}
+export async function removeLesson(id: string) {
+  await request(`/timetable/lessons/${id}`, { method: 'DELETE' });
 }

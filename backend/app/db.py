@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, Identity, Integer, String, Text, UniqueConstraint, false
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Identity, Integer, String, Text, UniqueConstraint, false
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -123,6 +123,29 @@ class SubjectRecord(Base):
     grades: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class LessonRecord(Base):
+    """One lesson in a class's weekly timetable: a teacher (and so their subject) at a day and period."""
+    __tablename__ = "lessons"
+    __table_args__ = (
+        CheckConstraint("grade BETWEEN 1 AND 11", name="ck_lessons_grade"),
+        CheckConstraint("day BETWEEN 0 AND 5", name="ck_lessons_day"),
+        CheckConstraint("period BETWEEN 0 AND 6", name="ck_lessons_period"),
+        # One lesson per class at a time, and a teacher in one place at a time.
+        UniqueConstraint("grade", "class_name", "day", "period", name="uq_lessons_class_time"),
+        UniqueConstraint("teacher_id", "day", "period", name="uq_lessons_teacher_time"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    grade: Mapped[int] = mapped_column(Integer)
+    # The class letter in capitals, such as "A"; empty for a grade with a single class.
+    class_name: Mapped[str] = mapped_column(String(10), default="")
+    # 0 is Monday ... 5 is Saturday; period 0 starts at 08:00, period 6 at 14:00.
+    day: Mapped[int] = mapped_column(Integer)
+    period: Mapped[int] = mapped_column(Integer)
+    # Removing a teacher removes their lessons.
+    teacher_id: Mapped[str] = mapped_column(String(36), ForeignKey("teachers.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 async def get_session():

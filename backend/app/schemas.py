@@ -212,6 +212,69 @@ class SubjectOut(BaseModel):
     updated_at: datetime
 
 
+class ClassRef(BaseModel):
+    """A class such as 5-A: its grade and its letter (empty when a grade has a single class)."""
+    model_config = ConfigDict(extra="forbid")
+    grade: int = Field(ge=1, le=11, strict=True)
+    class_name: str = Field(default="", max_length=10)
+
+    @field_validator("class_name")
+    @classmethod
+    def letter(cls, value: str) -> str:
+        value = value.strip().upper()
+        if not re.fullmatch(r"[^\W_]*", value):
+            raise ValueError("A class letter may contain only letters and digits.")
+        return value
+
+
+class LessonIn(ClassRef):
+    day: int = Field(ge=0, le=5, strict=True)
+    period: int = Field(ge=0, le=6, strict=True)
+    teacher_id: UUID
+
+
+class LessonOut(BaseModel):
+    id: UUID
+    day: int
+    period: int
+    teacher_id: UUID
+    teacher_name: str
+    subject: str
+    subject_names: dict[Language, str]
+
+
+class LessonOption(BaseModel):
+    """A subject and one of its teachers, ready to be placed in the class's timetable."""
+    teacher_id: UUID
+    teacher_name: str
+    subject: str
+    subject_names: dict[Language, str]
+
+
+class BusyTime(BaseModel):
+    """A teacher's lesson in another class, so the same time cannot be given to them here."""
+    teacher_id: UUID
+    day: int
+    period: int
+    grade: int
+    class_name: str
+
+
+class TimetableOut(BaseModel):
+    grade: int
+    class_name: str
+    lessons: list[LessonOut]
+    busy: list[BusyTime]
+    options: list[LessonOption]
+
+
+class ClassSummary(BaseModel):
+    grade: int
+    class_name: str
+    students: int
+    lessons: int
+
+
 class TeacherLoginIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     login: str = Field(min_length=1, max_length=60)
