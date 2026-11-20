@@ -157,6 +157,19 @@ class StudentOut(StudentIn):
     pass_key: str
 
 
+class ParentLoginIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    pass_key: str = Field(min_length=1, max_length=40)
+
+
+class ParentChild(BaseModel):
+    """What a signed-in parent sees about their child. Never includes the pass key or contact details."""
+    model_config = ConfigDict(from_attributes=True)
+    full_name: str
+    grade: int
+    class_name: str | None
+
+
 class ImportedPassKey(BaseModel):
     full_name: str
     grade: int

@@ -16,7 +16,9 @@ import './social.css';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 60_000 } } });
 const Admin = lazy(() => import('./Admin'));
-const Page = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/') ? Admin : App;
+const Parent = lazy(() => import('./Parent'));
+const section = (name: string) => window.location.pathname === `/${name}` || window.location.pathname.startsWith(`/${name}/`);
+const Page = section('admin') ? Admin : section('parent') ? Parent : App;
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode><QueryClientProvider client={queryClient}><MotionConfig reducedMotion="user"><LanguageProvider><Suspense fallback={<p role="status">…</p>}><Page /></Suspense></LanguageProvider></MotionConfig></QueryClientProvider></React.StrictMode>,
 );

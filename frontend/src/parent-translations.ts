@@ -1,0 +1,22 @@
+export const parentUz = {
+  'For parents': 'Ota-onalar uchun', 'Parent sign-in': 'Ota-onalar uchun kirish',
+  'Enter the pass key the school gave you. That is all you need.': 'Maktab bergan kirish kalitini kiriting. Boshqa hech narsa kerak emas.',
+  'Capital or small letters both work, and the dashes are added for you.': 'Katta yoki kichik harflar farq qilmaydi, chiziqchalar o‘zi qo‘yiladi.',
+  'The pass key has 12 letters and digits. Please enter all of it.': 'Kirish kaliti 12 ta harf va raqamdan iborat. Uni to‘liq kiriting.',
+  'This pass key was not recognised. Please check it and try again.': 'Bu kirish kaliti topilmadi. Tekshirib, qayta urinib ko‘ring.',
+  'Parent sign-in is unavailable right now. Please try again later.': 'Hozircha kirish imkoni yo‘q. Keyinroq qayta urinib ko‘ring.',
+  'No pass key, or it does not work? Please ask the school office for a new one.': 'Kirish kalitingiz yo‘qmi yoki ishlamayaptimi? Maktab ma’muriyatidan yangisini so‘rang.',
+  'You are signed in': 'Siz tizimga kirdingiz',
+  'Your pass key was accepted. The parent pages are being prepared and will appear here.': 'Kirish kalitingiz qabul qilindi. Ota-onalar sahifalari tayyorlanmoqda va shu yerda paydo bo‘ladi.',
+};
+export const parentRu: Record<keyof typeof parentUz, string> = {
+  'For parents': 'Родителям', 'Parent sign-in': 'Вход для родителей',
+  'Enter the pass key the school gave you. That is all you need.': 'Введите ключ доступа, который вам выдала школа. Больше ничего не нужно.',
+  'Capital or small letters both work, and the dashes are added for you.': 'Можно вводить заглавные или строчные буквы, дефисы добавятся сами.',
+  'The pass key has 12 letters and digits. Please enter all of it.': 'Ключ доступа состоит из 12 букв и цифр. Введите его полностью.',
+  'This pass key was not recognised. Please check it and try again.': 'Такой ключ доступа не найден. Проверьте его и повторите попытку.',
+  'Parent sign-in is unavailable right now. Please try again later.': 'Вход для родителей сейчас недоступен. Повторите попытку позже.',
+  'No pass key, or it does not work? Please ask the school office for a new one.': 'Нет ключа доступа или он не работает? Попросите новый в администрации школы.',
+  'You are signed in': 'Вы вошли',
+  'Your pass key was accepted. The parent pages are being prepared and will appear here.': 'Ваш ключ доступа принят. Страницы для родителей готовятся и появятся здесь.',
+};

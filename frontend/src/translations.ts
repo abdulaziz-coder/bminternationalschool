@@ -2,6 +2,7 @@ import { adminUz, adminRu } from './admin-translations';
 import { noticeUz, noticeRu } from './notice-translations';
 import { studentUz, studentRu } from './student-translations';
 import { teacherUz, teacherRu } from './teacher-translations';
+import { parentUz, parentRu } from './parent-translations';
 export type Locale = 'en' | 'uz' | 'ru';
 export const languages: { code: Locale; label: string; short: string }[] = [
   { code: 'uz', label: 'O‘zbekcha', short: 'UZ' },
@@ -42,6 +43,7 @@ export const uz = {
   ...noticeUz,
   ...studentUz,
   ...teacherUz,
+  ...parentUz,
   'Follow us': 'Bizni kuzating', 'Contact us': 'Bog‘lanish', 'Telegram channel': 'Telegram kanal',
   'Prefer to chat?': 'Yozishmoqchimisiz?', 'Message us on Telegram': 'Telegram orqali yozing',
   'Grade': 'Sinf', 'Choose a grade': 'Sinfni tanlang', 'Choose a grade from 1 to 11.': '1 dan 11 gacha sinfni tanlang.',
@@ -157,6 +159,7 @@ export const ru: Record<keyof typeof uz, string> = {
   ...noticeRu,
   ...studentRu,
   ...teacherRu,
+  ...parentRu,
   'Follow us': 'Мы в соцсетях', 'Contact us': 'Связаться', 'Telegram channel': 'Telegram-канал',
   'Prefer to chat?': 'Удобнее в чате?', 'Message us on Telegram': 'Напишите нам в Telegram',
   'Grade': 'Класс', 'Choose a grade': 'Выберите класс', 'Choose a grade from 1 to 11.': 'Выберите класс от 1 до 11.',

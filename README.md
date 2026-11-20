@@ -95,6 +95,12 @@ The Students tab of the admin panel (http://127.0.0.1:3000/admin#students) keeps
 
 Every student has a generated pass key (for example `K7QM-4XPD-9HTR`), which a parent will use to sign up. It is created when the student is added by hand or imported from Excel, and the initializer gives one to any student who has none. The key is always shown in the student table with a copy button, and the list can be searched by it; after adding or importing, the new keys are also shown together so they can be copied or downloaded as a list. A key keeps working until an admin presses “Generate pass key” for that student, which replaces it (`POST /api/admin/students/{id}/pass-key`). Keys are stored as readable text so admins can look them up, which means anyone with access to the admin panel or the database can read them. Restart `python scripts/dev.py` once after this update so the `pass_key` column is added and filled.
 
+## Parent sign-in
+
+Parents sign in at http://127.0.0.1:3000/parent (linked as “For parents” in the site header and footer) with nothing but their child's pass key. The field formats the key as it is typed or pasted, so letter case, spaces, and dashes do not matter. A wrong key is refused with the same message whether or not it looks like a key, and one address may try at most 8 wrong keys a minute. Nothing is shown to signed-in parents yet beyond a confirmation and a sign-out button; the parent pages are still to be built.
+
+`POST /api/parent/login` takes `{"pass_key": "..."}` and sets an HttpOnly, SameSite=Strict cookie limited to `/api/parent`; `GET /api/parent/session` returns the child's name, grade, and class letter for the signed-in parent; `POST /api/parent/logout` ends the session. Sessions last 30 days, are kept in the API's memory (so restarting the API signs parents out), and end at once when an admin generates a new pass key for the student or removes the student. A parent session gives no access to the admin endpoints.
+
 Student records are personal data about children: they are only available through the protected `/api/admin/students` endpoints and are never shown on the public website. Excel reading uses `openpyxl`; after updating, run `backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.lock` and restart `python scripts/dev.py` so the `students` table is created.
 
 ## Teachers
