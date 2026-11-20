@@ -18,7 +18,8 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, sta
 const Admin = lazy(() => import('./Admin'));
 const Parent = lazy(() => import('./Parent'));
 const section = (name: string) => window.location.pathname === `/${name}` || window.location.pathname.startsWith(`/${name}/`);
-const Page = section('admin') ? Admin : section('parent') ? Parent : App;
+const Teacher = lazy(() => import('./Teacher'));
+const Page = section('admin') ? Admin : section('parent') ? Parent : section('teacher') ? Teacher : App;
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode><QueryClientProvider client={queryClient}><MotionConfig reducedMotion="user"><LanguageProvider><Suspense fallback={<p role="status">…</p>}><Page /></Suspense></LanguageProvider></MotionConfig></QueryClientProvider></React.StrictMode>,
 );

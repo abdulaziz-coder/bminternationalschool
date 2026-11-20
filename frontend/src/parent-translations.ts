@@ -1,3 +1,4 @@
+// Words for the parent and teacher sign-in pages.
 export const parentUz = {
   'For parents': 'Ota-onalar uchun', 'Parent sign-in': 'Ota-onalar uchun kirish',
   'Enter the pass key the school gave you. That is all you need.': 'Maktab bergan kirish kalitini kiriting. Boshqa hech narsa kerak emas.',
@@ -6,6 +7,15 @@ export const parentUz = {
   'This pass key was not recognised. Please check it and try again.': 'Bu kirish kaliti topilmadi. Tekshirib, qayta urinib ko‘ring.',
   'Parent sign-in is unavailable right now. Please try again later.': 'Hozircha kirish imkoni yo‘q. Keyinroq qayta urinib ko‘ring.',
   'No pass key, or it does not work? Please ask the school office for a new one.': 'Kirish kalitingiz yo‘qmi yoki ishlamayaptimi? Maktab ma’muriyatidan yangisini so‘rang.',
+  'For teachers': 'O‘qituvchilar uchun', 'Teacher sign-in': 'O‘qituvchilar uchun kirish',
+  'Sign in with the login and password the school gave you.': 'Maktab bergan login va parol bilan kiring.',
+  'Capital and small letters in the password are different.': 'Parolda katta va kichik harflar farq qiladi.',
+  'Show password': 'Parolni ko‘rsatish', 'Hide password': 'Parolni yashirish',
+  'Please enter your login and password.': 'Login va parolingizni kiriting.',
+  'Incorrect login or password.': 'Login yoki parol noto‘g‘ri.',
+  'Teacher sign-in is unavailable right now. Please try again later.': 'Hozircha kirish imkoni yo‘q. Keyinroq qayta urinib ko‘ring.',
+  'Forgotten your password? Ask the school office to generate a new one.': 'Parolni unutdingizmi? Maktab ma’muriyatidan yangisini yaratishni so‘rang.',
+  'The teacher pages are being prepared and will appear here.': 'O‘qituvchilar sahifalari tayyorlanmoqda va shu yerda paydo bo‘ladi.',
   'You are signed in': 'Siz tizimga kirdingiz',
   'Your pass key was accepted. The parent pages are being prepared and will appear here.': 'Kirish kalitingiz qabul qilindi. Ota-onalar sahifalari tayyorlanmoqda va shu yerda paydo bo‘ladi.',
 };
@@ -17,6 +27,15 @@ export const parentRu: Record<keyof typeof parentUz, string> = {
   'This pass key was not recognised. Please check it and try again.': 'Такой ключ доступа не найден. Проверьте его и повторите попытку.',
   'Parent sign-in is unavailable right now. Please try again later.': 'Вход для родителей сейчас недоступен. Повторите попытку позже.',
   'No pass key, or it does not work? Please ask the school office for a new one.': 'Нет ключа доступа или он не работает? Попросите новый в администрации школы.',
+  'For teachers': 'Учителям', 'Teacher sign-in': 'Вход для учителей',
+  'Sign in with the login and password the school gave you.': 'Войдите с логином и паролем, которые вам выдала школа.',
+  'Capital and small letters in the password are different.': 'В пароле заглавные и строчные буквы различаются.',
+  'Show password': 'Показать пароль', 'Hide password': 'Скрыть пароль',
+  'Please enter your login and password.': 'Введите логин и пароль.',
+  'Incorrect login or password.': 'Неверный логин или пароль.',
+  'Teacher sign-in is unavailable right now. Please try again later.': 'Вход для учителей сейчас недоступен. Повторите попытку позже.',
+  'Forgotten your password? Ask the school office to generate a new one.': 'Забыли пароль? Попросите администрацию школы создать новый.',
+  'The teacher pages are being prepared and will appear here.': 'Страницы для учителей готовятся и появятся здесь.',
   'You are signed in': 'Вы вошли',
   'Your pass key was accepted. The parent pages are being prepared and will appear here.': 'Ваш ключ доступа принят. Страницы для родителей готовятся и появятся здесь.',
 };

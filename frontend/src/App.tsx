@@ -95,7 +95,7 @@ export default function App() {
       <Admissions />
     </main><footer className="site-footer">
       <div className="footer-main"><div className="footer-brand"><Brand /><p>{t("A world of possibility.")}</p></div><SocialLinks /></div>
-      <div className="footer-base"><small>© {new Date().getFullYear()} {" "}{t("Boborahim Mashrab International School")} · {t("Website concept")}</small><div className="footer-base-links"><a className="text-link" href="/parent">{t("For parents")} ↗</a><a className="text-link" href="/admin">{t("Admin panel")} ↗</a><a className="text-link" href="#">{t("Back to top")} ↑</a></div></div>
+      <div className="footer-base"><small>© {new Date().getFullYear()} {" "}{t("Boborahim Mashrab International School")} · {t("Website concept")}</small><div className="footer-base-links"><a className="text-link" href="/parent">{t("For parents")} ↗</a><a className="text-link" href="/teacher">{t("For teachers")} ↗</a><a className="text-link" href="/admin">{t("Admin panel")} ↗</a><a className="text-link" href="#">{t("Back to top")} ↑</a></div></div>
     </footer>
   </>;
 }

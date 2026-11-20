@@ -101,6 +101,12 @@ Parents sign in at http://127.0.0.1:3000/parent (linked as “For parents” in 
 
 `POST /api/parent/login` takes `{"pass_key": "..."}` and sets an HttpOnly, SameSite=Strict cookie limited to `/api/parent`; `GET /api/parent/session` returns the child's name, grade, and class letter for the signed-in parent; `POST /api/parent/logout` ends the session. Sessions last 30 days, are kept in the API's memory (so restarting the API signs parents out), and end at once when an admin generates a new pass key for the student or removes the student. A parent session gives no access to the admin endpoints.
 
+## Teacher sign-in
+
+Teachers sign in at http://127.0.0.1:3000/teacher (linked as “For teachers” in the site footer) with the login and password generated in the Teachers tab of the admin panel. There is no sign-up: only teachers an admin has added can sign in. The login may be typed in any letter case; the password must be exact. An unknown login and a wrong password are refused with the same message and take the same time, and at most 5 wrong attempts a minute are allowed per address and per login. Nothing is shown to signed-in teachers yet beyond a confirmation with their name and subject and a sign-out button.
+
+`POST /api/teacher/login` takes `{"login": "...", "password": "..."}` and sets an HttpOnly, SameSite=Strict cookie limited to `/api/teacher`; `GET /api/teacher/session` returns the signed-in teacher's name, subject, and login; `POST /api/teacher/logout` ends the session. Sessions last 7 days, are kept in the API's memory (so restarting the API signs teachers out), and end at once when an admin generates a new password for the teacher or removes the teacher. A teacher session gives no access to the admin or parent endpoints.
+
 Student records are personal data about children: they are only available through the protected `/api/admin/students` endpoints and are never shown on the public website. Excel reading uses `openpyxl`; after updating, run `backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.lock` and restart `python scripts/dev.py` so the `students` table is created.
 
 ## Teachers

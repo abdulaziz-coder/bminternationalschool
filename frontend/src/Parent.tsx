@@ -5,7 +5,7 @@ import Brand from './Brand';
 import { LanguageSwitcher, useLanguage } from './i18n';
 import { formatPassKey, parentLogin, parentLogout, parentSession, ParentError } from './parent-api';
 import './admin.css';
-import './parent.css';
+import './portal.css';
 
 /** The parents' page: sign in with nothing but the pass key from the school. */
 export default function Parent() {
@@ -33,21 +33,21 @@ export default function Parent() {
     <a className="skip" href="#parent-main">{t('Skip to content')}</a>
     <header className="admin-header"><Brand /><div className="admin-header-actions"><LanguageSwitcher /></div></header>
     <main id="parent-main" className="admin-main">
-      {!child ? <motion.section className="admin-login parent-login" initial={reduced ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      {!child ? <motion.section className="admin-login portal-login" initial={reduced ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <span className="admin-lock" aria-hidden="true"><KeyIcon size={27} /></span>
         <p className="admin-eyebrow">{t('For parents')}</p><h1>{t('Parent sign-in')}</h1><p>{t('Enter the pass key the school gave you. That is all you need.')}</p>
         {session.isPending ? <p role="status">{t('Loading…')}</p> : session.isError ? <div role="alert" className="admin-error"><p>{errorMessage(session.error)}</p><button className="admin-secondary" onClick={() => session.refetch()}>{t('Try again')}</button></div> : <form onSubmit={submit} noValidate>
-          <label htmlFor="parent-pass-key">{t('Pass key')}<input id="parent-pass-key" className="parent-key-input" value={passKey} placeholder="XXXX-XXXX-XXXX" maxLength={20} inputMode="text" autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} autoFocus onChange={event => { setPassKey(formatPassKey(event.target.value)); setIncomplete(false); login.reset(); }} aria-invalid={!!problem} aria-describedby={problem ? 'parent-key-error' : 'parent-key-hint'} required /></label>
-          {problem ? <p id="parent-key-error" role="alert" className="admin-error">{problem}</p> : <p id="parent-key-hint" className="parent-key-hint">{t('Capital or small letters both work, and the dashes are added for you.')}</p>}
+          <label htmlFor="parent-pass-key">{t('Pass key')}<input id="parent-pass-key" className="portal-key-input" value={passKey} placeholder="XXXX-XXXX-XXXX" maxLength={20} inputMode="text" autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} autoFocus onChange={event => { setPassKey(formatPassKey(event.target.value)); setIncomplete(false); login.reset(); }} aria-invalid={!!problem} aria-describedby={problem ? 'parent-key-error' : 'parent-key-hint'} required /></label>
+          {problem ? <p id="parent-key-error" role="alert" className="admin-error">{problem}</p> : <p id="parent-key-hint" className="portal-hint">{t('Capital or small letters both work, and the dashes are added for you.')}</p>}
           <button className="button admin-login-button" type="submit" disabled={login.isPending}>{t(login.isPending ? 'Signing in…' : 'Sign in')}<span>↗</span></button>
         </form>}
         <p className="admin-access-hint">{t('No pass key, or it does not work? Please ask the school office for a new one.')}</p><a className="text-link" href="/">← {t('Back to website')}</a>
-      </motion.section> : <motion.section className="admin-login parent-login" initial={reduced ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      </motion.section> : <motion.section className="admin-login portal-login" initial={reduced ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         {/* Nothing is built for signed-in parents yet; this only confirms the sign-in worked. */}
-        <span className="admin-lock parent-signed-in" aria-hidden="true"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.500 4.500 4.500L19 7.500" /></svg></span>
+        <span className="admin-lock portal-signed-in" aria-hidden="true"><svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.500 4.500 4.500L19 7.500" /></svg></span>
         <p className="admin-eyebrow">{t('For parents')}</p><h1>{t('You are signed in')}</h1><p>{t('Your pass key was accepted. The parent pages are being prepared and will appear here.')}</p>
         {logout.isError && <p className="admin-error" role="alert">{errorMessage(logout.error)}</p>}
-        <button className="button admin-login-button parent-sign-out" type="button" onClick={() => logout.mutate()} disabled={logout.isPending}>{t('Sign out')}<span>↗</span></button>
+        <button className="button admin-login-button portal-sign-out" type="button" onClick={() => logout.mutate()} disabled={logout.isPending}>{t('Sign out')}<span>↗</span></button>
         <a className="text-link" href="/">← {t('Back to website')}</a>
       </motion.section>}
     </main>

@@ -1,0 +1,15 @@
+/* Sign-in pages for parents and teachers. Layout and the card come from admin.css; this adds what those pages share. */
+.portal-login .portal-key-input{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:19px;letter-spacing:.12em;text-align:center;text-transform:uppercase;padding-top:15px;padding-bottom:15px}
+.portal-login .portal-key-input::placeholder{color:#b3c2cf;letter-spacing:.12em}
+.portal-hint{margin:-8px 0 18px;font-size:11px!important;line-height:1.6;color:#71889c}
+.portal-login form .admin-error{margin:-8px 0 18px}
+.portal-password{position:relative;display:block}
+.portal-login .portal-password input{padding-right:104px}
+.portal-password button{position:absolute;right:8px;bottom:7px;min-height:32px;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:#286892;font-size:11px;cursor:pointer}
+.portal-password button:hover{background:#eef4fa}
+.portal-signed-in{background:#e7f5ec;color:#1d6b40}
+.portal-identity{display:flex;align-items:center;gap:13px;margin-top:22px;padding:14px 16px;border-radius:14px;background:#eef4fa}
+.portal-identity strong{display:block;font-size:14px;color:#174265;overflow-wrap:break-word}
+.portal-identity small{display:block;margin-top:3px;font-size:11px;color:#6b8499}
+.portal-sign-out{margin-top:26px}
+@media(max-width:700px){.portal-login .portal-key-input{font-size:17px;letter-spacing:.08em}}

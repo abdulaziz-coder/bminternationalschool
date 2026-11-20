@@ -170,6 +170,20 @@ class ParentChild(BaseModel):
     class_name: str | None
 
 
+class TeacherLoginIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    login: str = Field(min_length=1, max_length=60)
+    password: str = Field(min_length=1, max_length=128)
+
+
+class TeacherIdentity(BaseModel):
+    """What a signed-in teacher sees about their own account. Never includes the password or its hash."""
+    model_config = ConfigDict(from_attributes=True)
+    full_name: str
+    subject: str
+    login: str
+
+
 class ImportedPassKey(BaseModel):
     full_name: str
     grade: int

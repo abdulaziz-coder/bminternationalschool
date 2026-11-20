@@ -1,8 +1,0 @@
-/* The parents' sign-in page. Layout and the card come from admin.css; this adds what is specific to parents. */
-.parent-login .parent-key-input{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:19px;letter-spacing:.12em;text-align:center;text-transform:uppercase;padding-top:15px;padding-bottom:15px}
-.parent-login .parent-key-input::placeholder{color:#b3c2cf;letter-spacing:.12em}
-.parent-key-hint{margin:-8px 0 18px;font-size:11px!important;line-height:1.6;color:#71889c}
-.parent-login form .admin-error{margin:-8px 0 18px}
-.parent-signed-in{background:#e7f5ec;color:#1d6b40}
-.parent-sign-out{margin-top:26px}
-@media(max-width:700px){.parent-login .parent-key-input{font-size:17px;letter-spacing:.08em}}
