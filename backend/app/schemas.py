@@ -275,6 +275,72 @@ class ClassSummary(BaseModel):
     lessons: int
 
 
+Attendance = Literal["present", "late", "absent"]
+# Grades are given on the 5-point scale used in Uzbekistan's schools.
+MAX_SCORE = 5
+
+
+class TeacherLesson(BaseModel):
+    """A lesson in the signed-in teacher's week, and whether its register is filled in for that week's date."""
+    id: UUID
+    day: int
+    period: int
+    date: date
+    grade: int
+    class_name: str
+    subject: str
+    subject_names: dict[Language, str]
+    students: int
+    recorded: bool
+
+
+class TeacherWeek(BaseModel):
+    week_start: date
+    today: date
+    lessons: list[TeacherLesson]
+
+
+class RegisterStudent(BaseModel):
+    id: UUID
+    full_name: str
+    attendance: Attendance | None
+    score: int | None
+
+
+class Register(BaseModel):
+    lesson_id: UUID
+    date: date
+    day: int
+    period: int
+    grade: int
+    class_name: str
+    subject: str
+    subject_names: dict[Language, str]
+    # False for a lesson that has not happened yet.
+    editable: bool
+    saved_at: datetime | None
+    students: list[RegisterStudent]
+
+
+class MarkIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    student_id: UUID
+    attendance: Attendance
+    score: int | None = Field(default=None, ge=1, le=MAX_SCORE, strict=True)
+
+    @field_validator("score")
+    @classmethod
+    def not_when_absent(cls, value: int | None, info) -> int | None:
+        if value is not None and info.data.get("attendance") == "absent":
+            raise ValueError("An absent student cannot be given a grade.")
+        return value
+
+
+class RegisterIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    marks: list[MarkIn] = Field(max_length=200)
+
+
 class TeacherLoginIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     login: str = Field(min_length=1, max_length=60)

@@ -13,3 +13,69 @@
 .portal-identity small{display:block;margin-top:3px;font-size:11px;color:#6b8499}
 .portal-sign-out{margin-top:26px}
 @media(max-width:700px){.portal-login .portal-key-input{font-size:17px;letter-spacing:.08em}}
+
+/* The teacher's week: a welcome strip, week navigation, and lessons that open their register. */
+.tp-welcome{display:flex;align-items:center;gap:18px;margin-bottom:18px;padding:24px 28px;border:1px solid #d8e4ee;border-radius:22px;background:#fbfdff}
+.tp-welcome .admin-avatar{width:54px;height:54px;border-radius:16px;font-size:20px}
+.tp-welcome h1{margin:4px 0 2px;font-size:28px;line-height:1.15;color:#174265;overflow-wrap:break-word}
+.tp-welcome p:not(.admin-eyebrow){margin:0;font-size:13px;color:#71889c}
+.tp-week-top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px}
+.tp-week-top h2{margin:0 0 4px;font-size:18px;color:#174265}.tp-week-top p{margin:0;font-size:12px;color:#71889c}
+.tp-week-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tp-week-nav .admin-secondary{min-width:42px;min-height:40px;padding:0 12px;font-size:16px}
+.tp-week-nav span{min-width:150px;font-size:13px;font-weight:600;color:#174265;text-align:center;font-variant-numeric:tabular-nums}
+.tp-week .tt-week tbody th small{display:block;margin-top:3px;font-size:10.5px;font-weight:500;color:#72899c}
+.tp-week .tt-week tbody th small b{color:#2c8259}
+.tp-week tr.tp-today td>*{box-shadow:0 0 0 2px #cfe8d9}
+.tp-week .tt-day-tabs button.tp-today{border-color:#9fd2b4}
+.tp-week .tt-day h3 small{margin-left:6px;font-size:13px;font-weight:500;color:#72899c}
+.tt-open{width:100%;font:inherit;text-align:left;cursor:pointer;transition:box-shadow .15s,transform .15s}
+.tt-open strong{font-size:15px}
+/* The site styles em as a decorative serif; here it is plain text. */
+.tt-open em{margin-top:2px;font-family:inherit;font-size:10px;font-style:normal;color:#72899c}
+.tt-open:hover,.tt-open:focus-visible{box-shadow:0 8px 18px #1742651f;transform:translateY(-1px)}
+.tt-open:focus-visible{outline:2px solid #2f6db5;outline-offset:2px}
+.tt-open.recorded{--tt-bg:#e8f6ee;--tt-line:#cde9d8;--tt-ink:#2c8259}.tt-open.recorded em{color:#2c8259;font-weight:600}
+.tt-open.upcoming{--tt-bg:#f7fafd;--tt-line:#e1eaf2;--tt-ink:#a3b4c3}.tt-open.upcoming strong{color:#55708a}
+.tp-week .tt-day .tt-open{padding-right:12px}
+
+/* The register: attendance boxes and a grade box for each student. */
+.rg .admin-dialog-content h2{margin-bottom:4px}
+.rg-when{margin:0 0 16px;font-size:13px;color:#55708a}
+.rg-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.rg-counts{display:flex;flex-wrap:wrap;gap:8px}
+.rg-count{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:50px;font-size:12px}
+.rg-count i{font-style:normal;font-weight:700}.rg-count b{font-variant-numeric:tabular-nums}
+.rg-count.present{background:#e8f6ee;color:#1d6b40}.rg-count.late{background:#fff4e2;color:#8a5a0c}.rg-count.absent{background:#fdecec;color:#a33a3c}
+.rg-head{display:grid;grid-template-columns:minmax(0,1fr) 300px 76px;gap:14px;padding:0 12px 6px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#72899c}
+.rg-list{display:grid;gap:6px;max-height:min(52vh,560px);margin:0;padding:0 2px 2px 0;overflow-y:auto;list-style:none}
+.rg-row{display:grid;grid-template-columns:minmax(0,1fr) 300px 76px;align-items:center;gap:14px;padding:8px 12px;border:1px solid #e1eaf2;border-left:4px solid #9fd2b4;border-radius:12px;background:#fff}
+.rg-row.late{border-left-color:#e9b860;background:#fffbf3}.rg-row.absent{border-left-color:#e08f8f;background:#fff8f8}
+.rg-name{display:flex;align-items:baseline;gap:10px;min-width:0;font-size:13px;font-weight:600;color:#174265;overflow-wrap:break-word}
+.rg-name b{flex:none;min-width:20px;font-size:11px;font-weight:500;color:#a3b4c3;text-align:right}
+.rg-att{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.rg-att button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 8px;border:1.5px solid #dbe5ee;border-radius:10px;background:#fff;color:#55708a;font:inherit;font-size:12px;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+.rg-att button i{font-style:normal;font-weight:700}
+.rg-att button:hover:not(:disabled){border-color:#b7c9da}
+.rg-att button:focus-visible{outline:2px solid #2f6db5;outline-offset:2px}
+.rg-att button.present[aria-checked=true]{border-color:#2c8259;background:#2c8259;color:#fff}
+.rg-att button.late[aria-checked=true]{border-color:#c98a1c;background:#c98a1c;color:#fff}
+.rg-att button.absent[aria-checked=true]{border-color:#b5484a;background:#b5484a;color:#fff}
+.rg-att button:disabled{cursor:default}.rg-att button:disabled:not([aria-checked=true]){opacity:.55}
+.rg-score input{box-sizing:border-box;width:100%;height:40px;padding:0;border:1.5px solid #dbe5ee;border-radius:10px;background:#fff;color:#174265;font-size:18px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+.rg-score input:focus{border-color:#2f6db5;outline:none;box-shadow:0 0 0 3px #2f6db526}
+.rg-score input:disabled{background:#f3f6f9;color:#a3b4c3}
+.rg-score input::placeholder{color:#c3cfdb;font-weight:400}
+.rg-leave{margin:14px 0 0}
+.rg-actions{flex-wrap:wrap;align-items:center;margin-top:16px}.rg-saved{margin-right:auto;font-size:11px;color:#72899c}
+@media(max-width:700px){
+  .tp-welcome{padding:18px}.tp-welcome h1{font-size:22px}
+  .tp-week-nav{width:100%}.tp-week-nav span{flex:1;min-width:0}
+  .rg-head{display:none}
+  .rg-list{max-height:none}
+  .rg-row{grid-template-columns:minmax(0,1fr) 64px;grid-template-areas:"name score" "att att";row-gap:10px;padding:12px}
+  .rg-name{grid-area:name}.rg-att{grid-area:att}.rg-score{grid-area:score}
+  .rg-att button{flex-direction:column;gap:2px;min-height:52px;padding:4px 2px;font-size:11px;line-height:1.2}.rg-score input{height:44px}
+  .rg-actions .admin-primary,.rg-actions .admin-secondary{flex:1}.rg-saved{flex-basis:100%}
+}
+@media(prefers-reduced-motion:reduce){.tt-open,.rg-att button{transition:none}}

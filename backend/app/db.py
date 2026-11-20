@@ -148,6 +148,28 @@ class LessonRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class MarkRecord(Base):
+    """A student's attendance, and optionally a grade, at one lesson on one date, as recorded by the teacher."""
+    __tablename__ = "marks"
+    __table_args__ = (
+        CheckConstraint("attendance IN ('present', 'late', 'absent')", name="ck_marks_attendance"),
+        CheckConstraint("score IS NULL OR (score BETWEEN 1 AND 5 AND attendance <> 'absent')", name="ck_marks_score"),
+        CheckConstraint("period BETWEEN 0 AND 6", name="ck_marks_period"),
+        UniqueConstraint("student_id", "date", "period", name="uq_marks_student_lesson"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    # Removing a student removes their marks.
+    student_id: Mapped[str] = mapped_column(String(36), ForeignKey("students.id", ondelete="CASCADE"), index=True)
+    date: Mapped[date] = mapped_column(Date, index=True)
+    period: Mapped[int] = mapped_column(Integer)
+    # Kept when the teacher or the timetable changes later, so past records stay readable.
+    teacher_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teachers.id", ondelete="SET NULL"), nullable=True, index=True)
+    subject: Mapped[str] = mapped_column(String(80))
+    attendance: Mapped[str] = mapped_column(String(10))
+    score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 async def get_session():
     async with Session() as session:
         yield session
