@@ -194,3 +194,18 @@ html:has(.admin-page){overflow-x:clip}
   .admin-inbox td.admin-row-actions{margin-top:auto}
   .admin-pagination>div{width:auto}
 }
+
+/* Subjects: the grades a subject is taught in, and the grade picker in its form. */
+.admin-grade-list{display:inline-flex;flex-wrap:wrap;gap:6px}
+.admin-grade-list span{padding:5px 10px;border-radius:50px;background:#eef3f9;color:#2c5d84;font-size:11px;font-weight:600;white-space:nowrap}
+.admin-grade-list span.all{background:#e7f5ec;color:#1d6b40}
+.admin-grades-none{font-size:11px;color:#9a6a1b}
+.admin-grade-picker{margin-top:4px}
+.admin-grade-chips .admin-chip{min-width:44px;min-height:44px;padding:8px;font-size:14px;font-weight:600}
+.admin-grade-presets{display:flex;flex-wrap:wrap;align-items:center;gap:2px 4px;margin-top:12px;font-size:11px;color:#71889c}
+.admin-grade-presets .admin-view{font-size:11px;border-radius:8px}
+.admin-grade-presets .admin-view[aria-pressed=true]{background:#eef4fa;font-weight:600}
+.admin-grade-presets .admin-view:disabled{opacity:.45;cursor:default;text-decoration:none}
+@container admin-list (max-width:899px){.admin-inbox td[data-label]>.admin-grade-list{justify-content:flex-end}}
+.admin-form-note.admin-form-warning{background:#fff6e3;color:#7a5613}
+.admin-notice-form select{width:100%}

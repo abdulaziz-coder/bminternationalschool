@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 import re
 
@@ -170,6 +170,35 @@ class ParentChild(BaseModel):
     class_name: str | None
 
 
+class SubjectIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    name: str = Field(min_length=2, max_length=80)
+    grades: list[Annotated[int, Field(ge=1, le=11, strict=True)]] = Field(default_factory=list, max_length=11)
+
+    @field_validator("name")
+    @classmethod
+    def single_spaces(cls, value: str) -> str:
+        return " ".join(value.split())
+
+    @field_validator("grades")
+    @classmethod
+    def distinct_in_order(cls, value: list[int]) -> list[int]:
+        if len(set(value)) != len(value):
+            raise ValueError("Each grade can be chosen only once.")
+        return sorted(value)
+
+
+class SubjectOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    name: str
+    grades: list[int]
+    # How many teachers teach this subject.
+    teachers: int
+    created_at: datetime
+    updated_at: datetime
+
+
 class TeacherLoginIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     login: str = Field(min_length=1, max_length=60)
@@ -253,7 +282,7 @@ class TeacherPage(BaseModel):
 class TeacherImportProblem(BaseModel):
     row: int
     name: str | None = None
-    reason: Literal["missing_name", "missing_subject", "bad_phone", "bad_value"]
+    reason: Literal["missing_name", "missing_subject", "unknown_subject", "bad_phone", "bad_value"]
 
 
 class ImportedCredentials(BaseModel):

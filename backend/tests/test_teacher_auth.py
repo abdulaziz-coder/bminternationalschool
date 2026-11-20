@@ -26,6 +26,9 @@ def clean_teacher_sessions():
 def add_teacher(client, **changes) -> dict:
     """Adds a teacher as the admin would and returns {"teacher": ..., "password": ...}."""
     admin_login(client)
+    # A teacher's subject must be in the admin's subject list.
+    for subject in ("Mathematics", "Physics"):
+        client.post("/api/admin/subjects", json={"name": subject, "grades": [5]}, headers=ORIGIN)
     created = client.post("/api/admin/teachers", json={**TEACHER, **changes}, headers=ORIGIN).json()
     client.post("/api/admin/logout", headers=ORIGIN)
     return created

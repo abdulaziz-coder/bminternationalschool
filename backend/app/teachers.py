@@ -1,4 +1,6 @@
-"""Teacher records for admins, with generated sign-in details for the future teacher pages.
+"""Teacher records for admins, with generated sign-in details for the teacher pages.
+
+A teacher's subject is one of the subjects in the admin's subject list (see subjects.py).
 
 Passwords are generated here, shown to the admin once, and stored only as salted scrypt hashes.
 An admin who needs a teacher's password again resets it, which issues a new one.
@@ -23,6 +25,7 @@ from .admin_auth import AdminSession, check_origin, hash_password, private_respo
 from .db import TeacherRecord, get_session
 from .schemas import TeacherCredentials, TeacherImportProblem, TeacherImportResult, TeacherIn, TeacherOut, TeacherPage
 from .students import MAX_FILE_BYTES, XLSX, clean_phone, normalise, open_sheet
+from .subjects import name_key, subject_names
 
 router = APIRouter(prefix="/api/admin/teachers", tags=["Local admin"], dependencies=[Depends(private_response)])
 Db = Annotated[AsyncSession, Depends(get_session)]
@@ -76,10 +79,10 @@ def teacher_key(full_name: str, subject: str) -> tuple:
     return normalise(full_name), normalise(subject)
 
 
-def read_workbook(content: bytes) -> tuple[list[TeacherIn], list[TeacherImportProblem], int]:
-    """Returns the valid teachers, the rows with problems, and the number of data rows."""
+def read_workbook(content: bytes) -> tuple[list[tuple[int, TeacherIn]], list[TeacherImportProblem], int]:
+    """Returns the valid teachers (with their sheet row numbers), the rows with problems, and the number of data rows."""
     rows, columns, header_number = open_sheet(content, COLUMN_KEYWORDS, ("full_name", "subject"))
-    teachers: list[TeacherIn] = []
+    teachers: list[tuple[int, TeacherIn]] = []
     problems: list[TeacherImportProblem] = []
     total = 0
     for number, row in enumerate(rows, start=header_number + 1):
@@ -101,7 +104,7 @@ def read_workbook(content: bytes) -> tuple[list[TeacherIn], list[TeacherImportPr
             problems.append(TeacherImportProblem(row=number, name=name, reason="missing_subject"))
             continue
         try:
-            teachers.append(TeacherIn(full_name=name, subject=subject, phone=clean_phone(cell("phone"))))
+            teachers.append((number, TeacherIn(full_name=name, subject=subject, phone=clean_phone(cell("phone")))))
         except ValidationError as error:
             problems.append(TeacherImportProblem(row=number, name=name, reason="bad_phone" if error.errors()[0]["loc"][0] == "phone" else "bad_value"))
     return teachers, problems, total
@@ -134,7 +137,10 @@ async def create_teacher(payload: TeacherIn, request: Request, admin: Admin, db:
     check_origin(request)
     password = new_password()
     try:
-        record = TeacherRecord(**payload.model_dump(), login=unique_login(payload.full_name, await taken_logins(db)), **hashed(password))
+        subject = (await subject_names(db)).get(name_key(payload.subject))
+        if subject is None:
+            raise HTTPException(422, "unknown_subject")
+        record = TeacherRecord(**{**payload.model_dump(), "subject": subject}, login=unique_login(payload.full_name, await taken_logins(db)), **hashed(password))
         db.add(record)
         await db.commit()
     except SQLAlchemyError:
@@ -171,9 +177,16 @@ async def import_teachers(request: Request, admin: Admin, db: Db, dry_run: bool 
     credentials: list[dict] = []
     try:
         existing = {teacher_key(name, subject) for name, subject in (await db.execute(select(TeacherRecord.full_name, TeacherRecord.subject))).all()}
+        subjects = await subject_names(db)
         fresh: list[TeacherIn] = []
         duplicates = 0
-        for teacher in parsed:
+        for number, teacher in parsed:
+            subject = subjects.get(name_key(teacher.subject))
+            if subject is None:
+                # Only subjects from the admin's subject list can be given to a teacher.
+                problems.append(TeacherImportProblem(row=number, name=teacher.full_name, reason="unknown_subject"))
+                continue
+            teacher = teacher.model_copy(update={"subject": subject})
             key = teacher_key(teacher.full_name, teacher.subject)
             # Already on the staff list, or listed twice in the file.
             if key in existing:
@@ -181,6 +194,7 @@ async def import_teachers(request: Request, admin: Admin, db: Db, dry_run: bool 
                 continue
             existing.add(key)
             fresh.append(teacher)
+        problems.sort(key=lambda problem: problem.row)
         if not dry_run and fresh:
             taken = await taken_logins(db)
             passwords = [new_password() for _ in fresh]
@@ -205,7 +219,11 @@ async def update_teacher(teacher_id: UUID, payload: TeacherIn, request: Request,
         record = await db.get(TeacherRecord, str(teacher_id))
         if record is None:
             raise HTTPException(404, "Teacher not found.")
-        for field, value in payload.model_dump().items():
+        # A teacher added before the subject list existed may keep the subject they already have.
+        subject = (await subject_names(db)).get(name_key(payload.subject)) or (payload.subject if payload.subject == record.subject else None)
+        if subject is None:
+            raise HTTPException(422, "unknown_subject")
+        for field, value in {**payload.model_dump(), "subject": subject}.items():
             setattr(record, field, value)
         record.updated_at = datetime.now(timezone.utc)
         await db.commit()

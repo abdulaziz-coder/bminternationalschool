@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from './i18n';
-import { AdminError, adminTeachers, createTeacher, deleteTeacher, importTeachers, resetTeacherPassword, teacherTemplateUrl, updateTeacher, type AdminTeacher, type TeacherDraft, type TeacherImportReport } from './admin-api';
+import { AdminError, adminSubjects, adminTeachers, createTeacher, deleteTeacher, importTeachers, resetTeacherPassword, teacherTemplateUrl, updateTeacher, type AdminTeacher, type TeacherDraft, type TeacherImportReport } from './admin-api';
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const blank: TeacherDraft = { full_name: '', subject: '', phone: '' };
-const problemReasons = { missing_name: 'The name is missing', missing_subject: 'The subject is missing', bad_phone: 'The phone number is not valid', bad_value: 'A value is too long' };
+const problemReasons = { missing_name: 'The name is missing', missing_subject: 'The subject is missing', unknown_subject: 'The subject is not in the subject list', bad_phone: 'The phone number is not valid', bad_value: 'A value is too long' };
 type Errors = { full_name?: string; subject?: string; phone?: string };
 /** Sign-in details that were just generated. They exist only in this component's memory until the admin closes the dialog. */
 type Issued = { full_name: string; subject: string; login: string; password: string };
@@ -35,6 +35,8 @@ export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void
   const safeButton = useRef<HTMLButtonElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const list = useQuery({ queryKey: ['admin', 'teachers', q, page], queryFn: () => adminTeachers({ q, page }), retry: false, staleTime: 0 });
+  // A teacher's subject is chosen from the subjects the admin has created.
+  const subjects = useQuery({ queryKey: ['admin', 'subjects'], queryFn: adminSubjects, retry: false, staleTime: 0 });
   const signOutIfExpired = (error: Error | null) => { if (error instanceof AdminError && error.status === 401) onSignedOut(); };
   const refresh = () => client.invalidateQueries({ queryKey: ['admin', 'teachers'] });
   const tidy = () => ({ full_name: draft.full_name.trim(), subject: draft.subject.trim(), phone: draft.phone.trim() });
@@ -97,7 +99,7 @@ export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void
     event.preventDefault();
     const problems: Errors = {};
     if (draft.full_name.trim().length < 2) problems.full_name = 'Please enter the teacher’s full name.';
-    if (draft.subject.trim().length < 2) problems.subject = 'Please enter the subject the teacher teaches.';
+    if (!draft.subject) problems.subject = 'Please choose the subject the teacher teaches.';
     const digits = draft.phone.replace(/\D/g, '');
     if (draft.phone.trim() && (!/^\+?[0-9 ().-]+$/.test(draft.phone.trim()) || digits.length < 7 || digits.length > 15)) problems.phone = 'Please enter a valid phone number with 7 to 15 digits.';
     setErrors(problems);
@@ -121,6 +123,10 @@ export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void
   const pages = Math.max(1, Math.ceil((list.data?.total ?? 0) / 25));
   const saveError = create.error ?? update.error;
   const confirming = deleting ?? resetting;
+  const subjectNames = (subjects.data ?? []).map(item => item.name);
+  // A teacher added before the subject list existed keeps their subject until the admin picks another.
+  const legacySubject = editing && editing !== 'new' && !subjectNames.includes(editing.subject) ? editing.subject : null;
+  const noSubjects = subjects.isSuccess && subjectNames.length === 0;
 
   return <>
     <div className="admin-title"><div><p className="admin-eyebrow">{t('Admissions admin')}</p><h1>{t('Teachers')}</h1><p>{t('Keep the staff list and issue each teacher a login and password for the teacher pages.')}</p></div><div className="admin-title-actions"><button type="button" className="admin-secondary" onClick={openImport}><ExcelIcon />{t('Import from Excel')}</button><button type="button" className="admin-primary" onClick={() => compose('new')}>{t('Add teacher')} +</button></div></div>
@@ -164,7 +170,7 @@ export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void
         <input ref={fileInput} className="sr-only" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" tabIndex={-1} aria-hidden="true" onChange={event => { chooseFile(event.target.files?.[0]); event.target.value = ''; }} />
         {!file ? <>
           <button type="button" className={dragging ? 'admin-dropzone dragging' : 'admin-dropzone'} onClick={() => fileInput.current?.click()} onDragOver={event => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}><ExcelIcon size={30} /><strong>{t('Choose an Excel file')}</strong><span>{t('or drag it here')}</span></button>
-          <p className="admin-import-hint">{t('The file needs a column for the name and a column for the subject. The phone is optional. Logins and passwords are generated for you.')} {t('The first sheet is read.')}</p>
+          <p className="admin-import-hint">{t('The file needs a column for the name and a column for the subject. The phone is optional. Logins and passwords are generated for you.')} {t('Each subject must already be in the Subjects tab.')} {t('The first sheet is read.')}</p>
           <a className="admin-template-link" href={teacherTemplateUrl} download>↓ {t('Download a template')}</a>
         </> : <>
           <div className="admin-file"><ExcelIcon /><span>{file.name}</span><button type="button" className="admin-view" disabled={busy || preview.isPending} onClick={() => fileInput.current?.click()}>{t('Choose another file')}</button></div>
@@ -181,9 +187,10 @@ export default function AdminTeachers({ onSignedOut }: { onSignedOut: () => void
         <h2 id="teacher-dialog-title">{t(editing === 'new' ? 'Add teacher' : 'Edit teacher')}</h2>
         <label htmlFor="teacher-name">{t('Full name')}<input id="teacher-name" ref={nameInput} value={draft.full_name} maxLength={120} autoComplete="off" onChange={event => set('full_name', event.target.value)} aria-invalid={!!errors.full_name} aria-describedby={errors.full_name ? 'teacher-name-error' : undefined} required />{errors.full_name && <span id="teacher-name-error" className="admin-field-error">{t(errors.full_name)}</span>}</label>
         <div className="admin-form-row two">
-          <label htmlFor="teacher-subject">{t('Subject taught')}<input id="teacher-subject" value={draft.subject} maxLength={80} placeholder={t('For example: Mathematics')} autoComplete="off" onChange={event => set('subject', event.target.value)} aria-invalid={!!errors.subject} aria-describedby={errors.subject ? 'teacher-subject-error' : undefined} required />{errors.subject && <span id="teacher-subject-error" className="admin-field-error">{t(errors.subject)}</span>}</label>
+          <label htmlFor="teacher-subject">{t('Subject taught')}<select id="teacher-subject" value={draft.subject} disabled={subjects.isPending} onChange={event => set('subject', event.target.value)} aria-invalid={!!errors.subject} aria-describedby={errors.subject ? 'teacher-subject-error' : noSubjects ? 'teacher-subject-hint' : undefined} required><option value="" disabled hidden>{t(subjects.isPending ? 'Loading…' : 'Choose a subject')}</option>{legacySubject && <option value={legacySubject}>{legacySubject} ({t('not in the subject list')})</option>}{subjectNames.map(name => <option key={name} value={name}>{name}</option>)}</select>{errors.subject && <span id="teacher-subject-error" className="admin-field-error">{t(errors.subject)}</span>}</label>
           <label htmlFor="teacher-phone">{t('Phone number')} <small>({t('Optional')})</small><input id="teacher-phone" type="tel" inputMode="tel" value={draft.phone} maxLength={32} placeholder="+998 90 123 45 67" autoComplete="off" onChange={event => set('phone', event.target.value)} aria-invalid={!!errors.phone} aria-describedby={errors.phone ? 'teacher-phone-error' : undefined} />{errors.phone && <span id="teacher-phone-error" className="admin-field-error">{t(errors.phone)}</span>}</label>
         </div>
+        {(noSubjects || subjects.isError) && <p id="teacher-subject-hint" className="admin-form-note admin-form-warning" role="note">{t(subjects.isError ? 'The subject list could not be loaded. Please try again.' : 'There are no subjects yet. Add them in the Subjects tab first, then come back to add teachers.')} {subjects.isError ? <button type="button" className="admin-view" onClick={() => subjects.refetch()}>{t('Try again')}</button> : <a className="admin-view" href="#subjects" onClick={() => window.location.reload()}>{t('Subjects')} ↗</a>}</p>}
         <p className="admin-form-note"><KeyIcon />{editing === 'new' ? t('A login and password are generated automatically when you save. The password works until you generate a new one.') : <>{t('The login stays the same when you edit a teacher.')} <code>{editing.login}</code></>}</p>
         {saveError && <p className="admin-error" role="alert">{errorMessage(saveError)}</p>}
         <div className="admin-confirm-actions"><button className="admin-secondary" type="button" disabled={busy} onClick={close}>{t('Cancel')}</button><button className="admin-primary" type="submit" disabled={busy}>{t(saving ? 'Saving…' : 'Save teacher')}</button></div>

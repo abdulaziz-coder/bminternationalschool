@@ -25,7 +25,8 @@ async function request(path: string, options?: RequestInit, timeout = 10_000) {
       const code = await response.json().then(body => String(body?.detail), () => '');
       throw new AdminError(400, reasons[code] ?? 'This file could not be read. Please upload an Excel .xlsx file.');
     }
-    const messages: Record<number, string> = { ...noticeMessages, ...studentMessages, ...teacherMessages, 401: path === '/login' ? 'Incorrect username or password.' : 'Please sign in again.', 429: 'Too many sign-in attempts. Try again in a minute.', 503: path === '/login' ? 'Admin account is not configured. Run the local database initializer.' : 'The local admin service is unavailable. Please check that the backend is running.' };
+    const subjectMessages: Record<number, string> = path.startsWith('/subjects') ? { 400: 'There are too many subjects. Remove one before adding another.', 404: 'This subject no longer exists.', 409: options?.method === 'DELETE' ? 'This subject still has teachers. Give them another subject first.' : 'A subject with this name already exists.', 422: 'Please check the subject and try again.' } : {};
+    const messages: Record<number, string> = { ...noticeMessages, ...studentMessages, ...teacherMessages, ...subjectMessages, 401: path === '/login' ? 'Incorrect username or password.' : 'Please sign in again.', 429: 'Too many sign-in attempts. Try again in a minute.', 503: path === '/login' ? 'Admin account is not configured. Run the local database initializer.' : 'The local admin service is unavailable. Please check that the backend is running.' };
     throw new AdminError(response.status, messages[response.status] ?? 'The local admin service is unavailable. Please check that the backend is running.');
   }
   return response.status === 204 ? null : response.json();
@@ -116,7 +117,7 @@ const teacherPage = z.object({ items: z.array(teacher), total: z.number(), page:
 const issued = z.object({ teacher, password: z.string() });
 const teacherImport = z.object({
   rows: z.number(), added: z.number(), duplicates: z.number(), problem_count: z.number(), saved: z.boolean(),
-  problems: z.array(z.object({ row: z.number(), name: z.string().nullable(), reason: z.enum(['missing_name', 'missing_subject', 'bad_phone', 'bad_value']) })),
+  problems: z.array(z.object({ row: z.number(), name: z.string().nullable(), reason: z.enum(['missing_name', 'missing_subject', 'unknown_subject', 'bad_phone', 'bad_value']) })),
   preview: z.array(z.object({ full_name: z.string(), subject: z.string() })),
   credentials: z.array(z.object({ full_name: z.string(), subject: z.string(), login: z.string(), password: z.string() })),
 });
@@ -147,3 +148,16 @@ export async function importTeachers(file: File, save: boolean) {
   return teacherImport.parse(await request(`/teachers/import?dry_run=${!save}`, { method: 'POST', headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }, body: file }, save ? 120_000 : 10_000));
 }
 export const teacherTemplateUrl = '/api/admin/teachers/template';
+
+const subject = z.object({ id: z.uuid(), name: z.string(), grades: z.array(z.number()), teachers: z.number() });
+export type AdminSubject = z.infer<typeof subject>;
+export type SubjectDraft = { name: string; grades: number[] };
+/** Every subject, in alphabetical order. */
+export async function adminSubjects() { return z.array(subject).parse(await request('/subjects')); }
+/** Adds a subject, or replaces the one with the given id. */
+export async function saveSubject(id: string | null, draft: SubjectDraft) {
+  return subject.parse(await request(id ? `/subjects/${id}` : '/subjects', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) }));
+}
+export async function deleteSubject(id: string) {
+  await request(`/subjects/${id}`, { method: 'DELETE' });
+}

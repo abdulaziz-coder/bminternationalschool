@@ -2,6 +2,7 @@ from datetime import date, datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, Identity, Integer, String, Text, UniqueConstraint, false
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -102,6 +103,18 @@ class TeacherRecord(Base):
     login: Mapped[str] = mapped_column(String(40), unique=True)
     password_salt: Mapped[str] = mapped_column(String(64))
     password_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class SubjectRecord(Base):
+    __tablename__ = "subjects"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    name: Mapped[str] = mapped_column(String(80))
+    # The name in lower case with single spaces; unique, so "Maths" and " maths " are the same subject.
+    name_key: Mapped[str] = mapped_column(String(80), unique=True)
+    # The grades (1-11) that take the subject, in ascending order. Empty until an admin assigns some.
+    grades: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 

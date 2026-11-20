@@ -1,4 +1,4 @@
-﻿from io import BytesIO
+from io import BytesIO
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -16,6 +16,12 @@ import asyncio
 
 TEACHER = {"full_name": "Karimova Zarina", "subject": "Mathematics", "phone": "+998 90 123 45 67"}
 XLSX_HEADERS = {**ORIGIN, "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+
+
+def add_subjects(client, *names):
+    """The subjects a teacher can be given must be in the admin's subject list first."""
+    for name in names:
+        assert client.post("/api/admin/subjects", json={"name": name, "grades": [5]}, headers=ORIGIN).status_code == 201
 
 
 def workbook(*rows) -> bytes:
@@ -63,7 +69,7 @@ def test_teacher_workbook_rows_are_validated():
         [3, None, "Fizika", None], [4, "No Subject", None, None], [5, "Bad Phone", "Kimyo", "ask"],
     ))
     assert total == 5
-    assert [(teacher.full_name, teacher.subject, teacher.phone) for teacher in teachers] == [("Karimova Zarina", "Matematika", "998901234567"), ("Aliyev Vali", "Ingliz tili", None)]
+    assert [(number, teacher.full_name, teacher.subject, teacher.phone) for number, teacher in teachers] == [(3, "Karimova Zarina", "Matematika", "998901234567"), (4, "Aliyev Vali", "Ingliz tili", None)]
     assert [(problem.row, problem.reason) for problem in problems] == [(5, "missing_name"), (6, "missing_subject"), (7, "bad_phone")]
 
 
@@ -71,6 +77,12 @@ def test_admin_adds_teachers_and_receives_one_time_sign_in_details(database_clie
     client = database_client
     login(client)
     assert client.post("/api/admin/teachers", json=TEACHER, headers={"Origin": "https://unrelated.example"}).status_code == 403
+    # A subject that is not in the subject list is refused.
+    assert client.post("/api/admin/teachers", json=TEACHER, headers=ORIGIN).status_code == 422
+    add_subjects(client, "Mathematics", "Physics", "Algebra")
+    # The subject is stored as it is written in the subject list, however it was typed.
+    assert client.post("/api/admin/teachers", json={**TEACHER, "full_name": "Typed Loosely", "subject": "  mathematics "}, headers=ORIGIN).json()["teacher"]["subject"] == "Mathematics"
+    client.delete(f"/api/admin/teachers/{client.get('/api/admin/teachers', params={'q': 'loosely'}).json()['items'][0]['id']}", headers=ORIGIN)
     created = client.post("/api/admin/teachers", json=TEACHER, headers=ORIGIN)
     assert created.status_code == 201 and created.headers["cache-control"] == "no-store"
     teacher, password = created.json()["teacher"], created.json()["password"]
@@ -102,6 +114,8 @@ def test_admin_adds_teachers_and_receives_one_time_sign_in_details(database_clie
     record = asyncio.run(stored(), loop_factory=loop_factory)
     assert record.password_hash == hash_password(reset.json()["password"], bytes.fromhex(record.password_salt))
     assert record.password_hash != hash_password(password, bytes.fromhex(record.password_salt))
+    # An edit cannot move a teacher to a subject that is not in the list.
+    assert client.put(f"/api/admin/teachers/{teacher['id']}", json={**TEACHER, "subject": "Astrology"}, headers=ORIGIN).status_code == 422
     assert client.post(f"/api/admin/teachers/{uuid4()}/password", headers=ORIGIN).status_code == 404
     assert client.put(f"/api/admin/teachers/{uuid4()}", json=TEACHER, headers=ORIGIN).status_code == 404
 
@@ -113,19 +127,22 @@ def test_admin_adds_teachers_and_receives_one_time_sign_in_details(database_clie
 def test_teacher_excel_import_previews_then_saves_with_sign_in_details(database_client):
     client = database_client
     login(client)
+    add_subjects(client, "Mathematics", "English", "History")
     client.post("/api/admin/teachers", json=TEACHER, headers=ORIGIN)
     content = workbook(
         ["F.I.Sh", "Fan", "Telefon"],
         ["karimova zarina", "mathematics", None],  # already on the list
         ["Aliyev Vali", "English", "+998 91 111 22 33"],
         ["Aliyev Vali", "English", None],  # listed twice
-        ["Aliyev Vali", "History", None],  # same name, another subject: a different record
+        ["Aliyev Vali", "HISTORY", None],  # same name, another subject: a different record
+        ["Usmonov Bek", "Astrology", None],  # not in the subject list
         ["", "Physics", None],
     )
     preview = client.post("/api/admin/teachers/import", content=content, headers=XLSX_HEADERS)
     assert preview.status_code == 200
     report = preview.json()
-    assert (report["rows"], report["added"], report["duplicates"], report["problem_count"], report["saved"], report["credentials"]) == (5, 2, 2, 1, False, [])
+    assert (report["rows"], report["added"], report["duplicates"], report["problem_count"], report["saved"], report["credentials"]) == (6, 2, 2, 2, False, [])
+    assert report["problems"] == [{"row": 6, "name": "Usmonov Bek", "reason": "unknown_subject"}, {"row": 7, "name": None, "reason": "missing_name"}]
     assert client.get("/api/admin/teachers").json()["total"] == 1
 
     saved = client.post("/api/admin/teachers/import", params={"dry_run": "false"}, content=content, headers=XLSX_HEADERS).json()
